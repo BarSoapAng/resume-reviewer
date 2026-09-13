@@ -73,7 +73,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(issues[0]);
   const [resolved, setResolved] = useState<number[]>([]);
-  const [isDemoResume, setIsDemoResume] = useState(true);
+  const [isDemoResume, setIsDemoResume] = useState(source === initialLatex);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -166,7 +166,7 @@ function App() {
                 <PanelFrame $mobileActive={activeTab === "review"} aria-label="Resume review" role="tabpanel">
                   <PanelHeader>
                     <PanelTitleWrap>
-                      <PanelEyebrow>AI reviewer</PanelEyebrow>
+                      <PanelEyebrow>{isDemoResume ? "AI reviewer · Demo" : "AI reviewer"}</PanelEyebrow>
                       <PanelTitle>Let’s make this stronger.</PanelTitle>
                     </PanelTitleWrap>
                     <IconButton aria-label="Collapse review panel" onClick={() => {
@@ -310,7 +310,10 @@ function App() {
                     EditorView.lineWrapping,
                   ]}
                   height="100%"
-                  onChange={setSource}
+                  onChange={(value) => {
+                    setSource(value);
+                    setIsDemoResume(false);
+                  }}
                   theme="light"
                   value={source}
                 />
