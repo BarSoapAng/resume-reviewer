@@ -1,12 +1,27 @@
-import { useEffect, useRef, useState } from "react";
-import CodeMirror from "@uiw/react-codemirror";
+import { useCallback, useEffect, useRef, useState } from "react";
+import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
 import { EditorView } from "@codemirror/view";
+import { searchKeymap } from "@codemirror/search";
+import { keymap } from "@codemirror/view";
+import { type Diagnostic, setDiagnostics } from "@codemirror/lint";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import styled from "styled-components";
 import { Icon } from "./components/Icon";
 import { breakpoints, colors, shadows } from "./lib/styles";
+import {
+  compileLatex,
+  createProject,
+  decideEdit,
+  sendReviewMessage,
+  startReview,
+  type CompileDiagnostic,
+  type Discipline as DisciplineType,
+  type EditProposal,
+  type ReviewIssue,
+  type ReviewState,
+} from "./lib/api";
 
 const initialLatex = `\\documentclass[10pt]{article}
 \\usepackage[margin=0.55in]{geometry}
@@ -39,7 +54,7 @@ const initialLatex = `\\documentclass[10pt]{article}
 type Tab = "review" | "source" | "preview";
 const tabs: Tab[] = ["review", "source", "preview"];
 
-const issues = [
+const demoIssues = [
   {
     id: 1,
     severity: "high",
@@ -66,19 +81,74 @@ const issues = [
   },
 ];
 
+type DisplayIssue = {
+  id: string;
+  severity: "high" | "medium" | "low";
+  label: string;
+  location: string;
+  detail: string;
+  question?: string;
+  anchor?: ReviewIssue["sourceAnchor"];
+  status: ReviewIssue["status"];
+};
+
+const initialIssues: DisplayIssue[] = demoIssues.map((issue) => ({
+  ...issue,
+  id: String(issue.id),
+  status: "open",
+}));
+
+function toDisplayIssues(issues: ReviewIssue[], questions: Array<{ issueIds: string[]; text: string }>): DisplayIssue[] {
+  return issues.map((issue) => ({
+    id: issue.id,
+    severity: issue.severity,
+    label: issue.description,
+    location: issue.category,
+    detail: issue.reasoning,
+    question: questions.find((question) => question.issueIds.includes(issue.id))?.text,
+    anchor: issue.sourceAnchor,
+    status: issue.status,
+  }));
+}
+
 function App() {
   const [source, setSource] = useState(
     () => window.localStorage.getItem("draftwise:resume-source") ?? initialLatex,
   );
   const [activeTab, setActiveTab] = useState<Tab>("review");
   const [reviewOpen, setReviewOpen] = useState(true);
-  const [selectedIssue, setSelectedIssue] = useState(issues[0]);
-  const [resolved, setResolved] = useState<number[]>([]);
+  const [issues, setIssues] = useState<DisplayIssue[]>(initialIssues);
+  const [selectedIssue, setSelectedIssue] = useState<DisplayIssue | undefined>(initialIssues[0]);
   const [isDemoResume, setIsDemoResume] = useState(source === initialLatex);
-  const [discipline, setDiscipline] = useState<"software" | "mechanical">("software");
+  const [discipline, setDiscipline] = useState<DisciplineType>("software");
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [reviewId, setReviewId] = useState<string>();
+  const [reviewState, setReviewState] = useState<ReviewState>("imported");
+  const [edits, setEdits] = useState<EditProposal[]>([]);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState<string>();
+  const [compileState, setCompileState] = useState<"idle" | "compiling" | "success" | "error">("idle");
+  const [compileError, setCompileError] = useState<string>();
+  const [diagnostics, setCompileDiagnostics] = useState<CompileDiagnostic[]>([]);
+  const [pdfUrl, setPdfUrl] = useState<string>();
   const fileInput = useRef<HTMLInputElement>(null);
+  const editor = useRef<ReactCodeMirrorRef>(null);
+
+  const compile = useCallback(async (latex = source) => {
+    setCompileState("compiling");
+    setCompileError(undefined);
+    try {
+      const result = await compileLatex(latex);
+      const nextUrl = result.pdfUrl ?? (result.pdfBase64 ? `data:application/pdf;base64,${result.pdfBase64}` : undefined);
+      setPdfUrl(nextUrl);
+      setCompileDiagnostics(result.diagnostics ?? []);
+      setCompileState(result.diagnostics?.some((item) => item.severity === "error") ? "error" : "success");
+    } catch (error) {
+      setCompileState("error");
+      setCompileError(error instanceof Error ? error.message : "Compilation failed");
+    }
+  }, [source]);
 
   useEffect(() => {
     const saveTimer = window.setTimeout(() => {
@@ -88,6 +158,37 @@ function App() {
     return () => window.clearTimeout(saveTimer);
   }, [source]);
 
+  useEffect(() => {
+    const compileTimer = window.setTimeout(() => void compile(source), 700);
+    return () => window.clearTimeout(compileTimer);
+  }, [compile, source]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        event.preventDefault();
+        void compile();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [compile]);
+
+  useEffect(() => {
+    if (!editor.current?.view) return;
+    const codeMirrorDiagnostics: Diagnostic[] = diagnostics.map((diagnostic) => {
+      const lineNumber = Math.min(Math.max(diagnostic.line ?? 1, 1), editor.current!.view!.state.doc.lines);
+      const line = editor.current!.view!.state.doc.line(lineNumber);
+      return {
+        from: Math.min(line.from + Math.max((diagnostic.column ?? 1) - 1, 0), line.to),
+        to: line.to,
+        severity: diagnostic.severity,
+        message: diagnostic.message,
+      };
+    });
+    editor.current.view.dispatch(setDiagnostics(editor.current.view.state, codeMirrorDiagnostics));
+  }, [diagnostics]);
+
   const upload = (file?: File) => {
     if (!file) return;
     const reader = new FileReader();
@@ -95,17 +196,60 @@ function App() {
       if (typeof reader.result === "string") {
         setSource(reader.result);
         setIsDemoResume(false);
+        setIssues([]);
+        setSelectedIssue(undefined);
+        setReviewId(undefined);
+        setReviewState("imported");
+        setMessages([]);
+        setEdits([]);
         setActiveTab("source");
       }
     };
     reader.readAsText(file);
   };
 
-  const sendMessage = () => {
+  const applyTurn = (turn: Awaited<ReturnType<typeof sendReviewMessage>>) => {
+    const nextIssues = toDisplayIssues(turn.issues, turn.questions);
+    setIssues(nextIssues);
+    setSelectedIssue((current) => nextIssues.find((issue) => issue.id === current?.id) ?? nextIssues[0]);
+    setReviewState(turn.state);
+    setEdits(turn.edits);
+    if (turn.message) setMessages((current) => [...current, { role: "assistant", content: turn.message }]);
+  };
+
+  const sendMessage = async () => {
     const nextMessage = message.trim();
-    if (!nextMessage) return;
-    setMessages((current) => [...current, nextMessage]);
+    if (!nextMessage || !reviewId || reviewBusy) return;
+    setMessages((current) => [...current, { role: "user", content: nextMessage }]);
     setMessage("");
+    setReviewBusy(true);
+    setReviewError(undefined);
+    try {
+      applyTurn(await sendReviewMessage(reviewId, nextMessage));
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "The reviewer could not respond");
+    } finally {
+      setReviewBusy(false);
+    }
+  };
+
+  const beginReview = async () => {
+    if (reviewBusy) return;
+    setReviewOpen(true);
+    setActiveTab("review");
+    setReviewBusy(true);
+    setReviewError(undefined);
+    try {
+      const project = await createProject("Technical resume", discipline, source);
+      const turn = await startReview(project.id);
+      setReviewId(turn.id);
+      applyTurn(turn);
+      setIsDemoResume(false);
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "Sign in is required to start a review");
+    } finally {
+      setReviewBusy(false);
+    }
   };
 
   const downloadSource = () => {
@@ -118,11 +262,34 @@ function App() {
   };
 
   const resolveIssue = () => {
-    if (!selectedIssue || resolved.includes(selectedIssue.id)) return;
-    setResolved((current) => [...current, selectedIssue.id]);
+    if (!selectedIssue) return;
+    setIssues((current) => current.map((issue) => issue.id === selectedIssue.id ? { ...issue, status: "skipped" } : issue));
+    setSelectedIssue((current) => current ? { ...current, status: "skipped" } : current);
   };
 
-  const unresolvedCount = issues.length - resolved.length;
+  const unresolvedCount = issues.filter((issue) => issue.status === "open" || issue.status === "probing").length;
+
+  const selectIssue = (issue: DisplayIssue) => {
+    setSelectedIssue(issue);
+    const exactText = issue.anchor?.exactText;
+    if (!exactText || !editor.current?.view) return;
+    const from = source.indexOf(exactText);
+    if (from < 0) return;
+    editor.current.view.dispatch({ selection: { anchor: from, head: from + exactText.length }, scrollIntoView: true });
+  };
+
+  const updateEdit = async (edit: EditProposal, decision: "accept" | "reject") => {
+    try {
+      const result = await decideEdit(edit.id, decision);
+      setEdits((current) => current.map((item) => item.id === edit.id ? { ...item, status: result.status } : item));
+      if (result.source) {
+        setSource(result.source);
+        await compile(result.source);
+      }
+    } catch (error) {
+      setReviewError(error instanceof Error ? error.message : "The edit could not be updated");
+    }
+  };
 
   const selectTab = (tab: Tab) => {
     if (tab === "review") setReviewOpen(true);
@@ -178,7 +345,7 @@ function App() {
             role="tab"
             tabIndex={activeTab === tab ? 0 : -1}
           >
-            {tab === "review" && isDemoResume && unresolvedCount > 0 ? `Review · ${unresolvedCount}` : tab}
+            {tab === "review" && unresolvedCount > 0 ? `Review · ${unresolvedCount}` : tab}
           </MobileTab>
         ))}
       </MobileTabs>
@@ -191,8 +358,8 @@ function App() {
                 <PanelFrame $mobileActive={activeTab === "review"} aria-labelledby="workspace-tab-review" id="workspace-panel-review" role="tabpanel">
                   <PanelHeader>
                     <PanelTitleWrap>
-                      <PanelEyebrow>{isDemoResume ? "AI reviewer · Demo" : "AI reviewer"}</PanelEyebrow>
-                      <PanelTitle>Let’s make this stronger.</PanelTitle>
+                      <PanelEyebrow>{isDemoResume && !reviewId ? "AI reviewer · Demo" : `AI reviewer · ${reviewState.replaceAll("_", " ")}`}</PanelEyebrow>
+                      <PanelTitle>{reviewBusy ? "Reviewing your evidence…" : "Let’s make this stronger."}</PanelTitle>
                     </PanelTitleWrap>
                     <IconButton aria-label="Collapse review panel" onClick={() => {
                       setReviewOpen(false);
@@ -202,16 +369,16 @@ function App() {
                     </IconButton>
                   </PanelHeader>
                   <ReviewBody>
-                    {!isDemoResume && (
+                    {!isDemoResume && !reviewId && (
                       <UnavailableNotice>
                         <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
                         <div>
                           <ReviewerName>Review not started</ReviewerName>
-                          <ReviewerCopy>Your uploaded source stays local. Connect the reviewer backend before generating feedback.</ReviewerCopy>
+                          <ReviewerCopy>Your source is ready. Sign in and start a review when you want structured feedback.</ReviewerCopy>
                         </div>
                       </UnavailableNotice>
                     )}
-                    {isDemoResume && <>
+                    {issues.length > 0 && <>
                     <ReviewerIntro>
                       <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
                       <div>
@@ -224,9 +391,9 @@ function App() {
 
                     <ProgressRow>
                       <ProgressText>Initial review</ProgressText>
-                      <ProgressCount>{resolved.length} of {issues.length} resolved</ProgressCount>
+                      <ProgressCount>{issues.length - unresolvedCount} of {issues.length} addressed</ProgressCount>
                     </ProgressRow>
-                    <ProgressTrack><ProgressFill $progress={(resolved.length / issues.length) * 100} /></ProgressTrack>
+                    <ProgressTrack><ProgressFill $progress={issues.length ? ((issues.length - unresolvedCount) / issues.length) * 100 : 0} /></ProgressTrack>
 
                     <SectionLabel>Priority feedback</SectionLabel>
                     <IssueList>
@@ -234,15 +401,15 @@ function App() {
                         <IssueCard
                           key={issue.id}
                           $active={selectedIssue?.id === issue.id}
-                          $resolved={resolved.includes(issue.id)}
+                          $resolved={issue.status === "resolved" || issue.status === "skipped"}
                         >
                           <IssueSummaryButton
                             aria-expanded={selectedIssue?.id === issue.id}
-                            onClick={() => setSelectedIssue(issue)}
+                            onClick={() => selectIssue(issue)}
                           >
                             <IssueTopline>
                               <Severity $severity={issue.severity}>
-                                {resolved.includes(issue.id) ? "Resolved" : issue.severity}
+                                {issue.status === "resolved" || issue.status === "skipped" ? issue.status : issue.severity}
                               </Severity>
                               <span>{issue.location}</span>
                             </IssueTopline>
@@ -267,9 +434,26 @@ function App() {
                       ))}
                     </IssueList>
 
-                    {messages.map((item, index) => (
-                      <UserMessage key={`${item}-${index}`}>{item}</UserMessage>
+                    {messages.map((item, index) => item.role === "user" ? (
+                      <UserMessage key={`${item.content}-${index}`}>{item.content}</UserMessage>
+                    ) : (
+                      <AssistantMessage key={`${item.content}-${index}`}>{item.content}</AssistantMessage>
                     ))}
+                    {edits.filter((edit) => edit.status === "pending" || edit.status === "stale").map((edit) => (
+                      <EditCard key={edit.id}>
+                        <QuestionLabel>Proposed edit</QuestionLabel>
+                        <DiffLine $removed>- {edit.oldText}</DiffLine>
+                        <DiffLine>+ {edit.newText}</DiffLine>
+                        <ReviewerCopy>{edit.explanation}</ReviewerCopy>
+                        <IssueActions>
+                          <TextButton onClick={() => void updateEdit(edit, "reject")}>Reject</TextButton>
+                          <AnswerButton disabled={edit.status === "stale"} onClick={() => void updateEdit(edit, "accept")}>
+                            {edit.status === "stale" ? "Outdated" : "Accept"}
+                          </AnswerButton>
+                        </IssueActions>
+                      </EditCard>
+                    ))}
+                    {reviewError && <ErrorNotice role="alert">{reviewError}</ErrorNotice>}
                     </>}
                   </ReviewBody>
                   <Composer>
@@ -283,12 +467,12 @@ function App() {
                           sendMessage();
                         }
                       }}
-                      disabled={!isDemoResume}
-                      placeholder={isDemoResume ? "Answer the reviewer…" : "Reviewer backend not connected"}
+                      disabled={!reviewId || reviewBusy}
+                      placeholder={reviewId ? "Answer the reviewer…" : "Start a review to answer questions"}
                       rows={2}
                       value={message}
                     />
-                    <SendButton aria-label="Send message" disabled={!isDemoResume || !message.trim()} onClick={sendMessage}>
+                    <SendButton aria-label="Send message" disabled={!reviewId || reviewBusy || !message.trim()} onClick={() => void sendMessage()}>
                       <Icon name="arrow" size={17} />
                     </SendButton>
                   </Composer>
@@ -318,10 +502,11 @@ function App() {
               </ToolHeader>
               <EditorMeta>
                 <FileName>resume.tex</FileName>
-                <SelectedAnchor>{isDemoResume && selectedIssue ? "Sample feedback linked to experience section" : "No feedback linked"}</SelectedAnchor>
+                <SelectedAnchor>{selectedIssue?.anchor?.exactText ?? (selectedIssue ? "Select feedback to locate its source" : "No feedback linked")}</SelectedAnchor>
               </EditorMeta>
               <EditorWrap>
                 <CodeMirror
+                  ref={editor}
                   basicSetup={{
                     bracketMatching: true,
                     closeBrackets: true,
@@ -333,6 +518,7 @@ function App() {
                   extensions={[
                     StreamLanguage.define(stex),
                     EditorView.lineWrapping,
+                    keymap.of(searchKeymap),
                   ]}
                   height="100%"
                   onChange={(value) => {
@@ -357,18 +543,20 @@ function App() {
               <ToolHeader>
                 <ToolTitle>Preview</ToolTitle>
                 <ToolActions>
-                  <CompileButton disabled title="Available after compiler integration">
-                    <Icon name="play" size={14} /> Compiler offline
+                  <CompileButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
+                    <Icon name="play" size={14} /> {compileState === "compiling" ? "Compiling…" : "Compile"}
                   </CompileButton>
-                  <IconButton aria-label="PDF download will be available after compiler integration" disabled title="Available after compiler integration"><Icon name="download" size={16} /></IconButton>
+                  <DownloadIconLink aria-label="Download PDF" download="resume.pdf" href={pdfUrl} $disabled={!pdfUrl} onClick={(event) => { if (!pdfUrl) event.preventDefault(); }} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={16} /></DownloadIconLink>
                 </ToolActions>
               </ToolHeader>
               <PreviewCanvas>
-                {!isDemoResume ? (
+                {pdfUrl ? (
+                  <PdfFrame src={pdfUrl} title="Compiled resume PDF" />
+                ) : !isDemoResume ? (
                   <PreviewUnavailable>
                     <PreviewUnavailableIcon><Icon name="code" size={20} /></PreviewUnavailableIcon>
-                    <strong>Preview unavailable</strong>
-                    <span>The compiler service is not connected yet. Your LaTeX source is still saved locally.</span>
+                    <strong>{compileState === "compiling" ? "Compiling resume" : "Preview unavailable"}</strong>
+                    <span>{compileError ?? "Start the compiler service, then retry. Your LaTeX source is still saved locally."}</span>
                   </PreviewUnavailable>
                 ) : (
                 <Paper>
@@ -405,16 +593,14 @@ function App() {
 
       <FooterBar>
         <CompileStatus>
-          <StatusDot /> Compiler not connected
+          <StatusDot $state={compileState} /> {compileState === "success" ? "Compiled" : compileState === "compiling" ? "Compiling…" : compileState === "error" ? "Compile failed" : "Ready to compile"}
         </CompileStatus>
-        <FooterHint>Changes are saved locally</FooterHint>
+        <FooterHint>{diagnostics.length ? `${diagnostics.length} compiler diagnostic${diagnostics.length === 1 ? "" : "s"}` : "Changes are saved locally"}</FooterHint>
         <FooterActions>
           <FooterDownloadButton aria-label="Download .tex source" onClick={downloadSource}><Icon name="download" size={15} /><span>Download .tex</span></FooterDownloadButton>
-          <PrimaryButton disabled={!isDemoResume} onClick={() => {
-            setReviewOpen(true);
-            setActiveTab("review");
-            document.getElementById("review-message")?.focus();
-          }}><Icon name="sparkles" size={15} /> Review</PrimaryButton>
+          <PrimaryButton disabled={reviewBusy || Boolean(reviewId)} onClick={() => void beginReview()}>
+            <Icon name="sparkles" size={15} /> {reviewId ? "Review active" : reviewBusy ? "Starting…" : "Start review"}
+          </PrimaryButton>
         </FooterActions>
       </FooterBar>
     </AppShell>
@@ -547,6 +733,19 @@ const IconButton = styled.button`
 
   &:hover { border-color: ${colors.border}; background: ${colors.surfaceStrong}; color: ${colors.ink}; }
   &:disabled { cursor: not-allowed; opacity: 0.4; }
+`;
+
+const DownloadIconLink = styled.a<{ $disabled: boolean }>`
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 7px;
+  color: ${colors.inkMuted};
+  opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
+  pointer-events: ${({ $disabled }) => ($disabled ? "none" : "auto")};
+
+  &:hover { background: ${colors.surfaceStrong}; color: ${colors.ink}; }
 `;
 
 const Workspace = styled.section`
@@ -832,6 +1031,48 @@ const UserMessage = styled.div`
   line-height: 1.45;
 `;
 
+const AssistantMessage = styled.div`
+  max-width: 92%;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid ${colors.border};
+  border-radius: 2px 10px 10px 10px;
+  background: ${colors.surfaceStrong};
+  font-size: 12px;
+  line-height: 1.5;
+`;
+
+const EditCard = styled.div`
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 10px;
+  background: ${colors.surfaceStrong};
+`;
+
+const DiffLine = styled.code<{ $removed?: boolean }>`
+  display: block;
+  padding: 7px 8px;
+  border-radius: 5px;
+  color: ${({ $removed }) => ($removed ? colors.red : colors.forestDark)};
+  background: ${({ $removed }) => ($removed ? colors.redPale : colors.forestPale)};
+  font-size: 10px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+`;
+
+const ErrorNotice = styled.p`
+  margin: 14px 0 0;
+  padding: 10px;
+  border-radius: 7px;
+  color: ${colors.red};
+  background: ${colors.redPale};
+  font-size: 11px;
+  line-height: 1.45;
+`;
+
 const Composer = styled.div`
   position: relative;
   margin: auto 14px 14px;
@@ -995,6 +1236,17 @@ const PreviewCanvas = styled.div`
   @media (max-width: ${breakpoints.mobile}) { padding: 14px; }
 `;
 
+const PdfFrame = styled.iframe`
+  display: block;
+  width: min(100%, 760px);
+  height: 100%;
+  min-height: 620px;
+  margin: 0 auto;
+  border: 0;
+  background: white;
+  box-shadow: ${shadows.paper};
+`;
+
 const PreviewUnavailable = styled.div`
   display: flex;
   width: min(100%, 360px);
@@ -1118,11 +1370,11 @@ const CompileStatus = styled.div`
   font-weight: 600;
 `;
 
-const StatusDot = styled.span`
+const StatusDot = styled.span<{ $state: "idle" | "compiling" | "success" | "error" }>`
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: currentColor;
+  background: ${({ $state }) => $state === "success" ? colors.forest : $state === "error" ? colors.red : $state === "compiling" ? colors.apricot : colors.inkMuted};
   box-shadow: 0 0 0 3px ${colors.forestPale};
 `;
 
