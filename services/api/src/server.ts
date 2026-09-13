@@ -23,7 +23,7 @@ const reviewer: ReviewEngine = {
       facts: [],
       issues: [],
       rules: await loadRubric(project.discipline),
-      userMessage: content,
+      userMessage: content || undefined,
     }, { model: session.model === "configured" ? undefined : session.model });
     return {
       state: turn.stage,

@@ -105,7 +105,8 @@ export async function createApp(deps: AppDependencies) {
     const value = await deps.repository.createEntitledReview(id, user.userId, input.rubricVersion, input.model);
     if (!value) throw new HttpError(404, "Project not found");
     if (value === "payment_required") throw new HttpError(402, "A review entitlement is required");
-    return reply.code(201).send({ id: value.id, state: value.state, message: "", issues: [], questions: [], edits: [] });
+    const turn = await deps.reviewer.runTurn({ session: value, content: "", userId: user.userId });
+    return reply.code(201).send({ id: value.id, ...turn });
   });
 
   app.get("/api/reviews/:id", async (request) => {

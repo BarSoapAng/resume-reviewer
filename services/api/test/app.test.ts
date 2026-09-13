@@ -81,6 +81,15 @@ describe("API", () => {
     await instance.close();
   });
 
+  it("runs and returns the initial review after consuming an entitlement", async () => {
+    const session = { id: "00000000-0000-4000-8000-000000000004", projectId: project.id, rubricVersion: "v1", state: "initial_review" as const, model: "configured", startedAt: new Date(), completedAt: null };
+    const instance = await app(repository({ createEntitledReview: vi.fn(async () => session) }));
+    const response = await instance.inject({ method: "POST", url: `/api/projects/${project.id}/reviews`, headers: { authorization: "Bearer valid" }, payload: {} });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toEqual({ id: session.id, state: "probing", message: "Review", issues: [], questions: [], edits: [] });
+    await instance.close();
+  });
+
   it("returns a structured review turn for the JSON client", async () => {
     const session = { id: "00000000-0000-4000-8000-000000000004", projectId: project.id, rubricVersion: "v1", state: "probing" as const, model: "configured", startedAt: new Date(), completedAt: null };
     const instance = await app(repository({ getReviewForUser: vi.fn(async () => session), addReviewMessage: vi.fn(async () => true) }));
