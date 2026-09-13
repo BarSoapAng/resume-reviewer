@@ -12,7 +12,7 @@
   "dependencies": {
     "@fastify/cors": "^10.0.2",
     "@supabase/supabase-js": "^2.57.4",
-    "drizzle-orm": "^0.44.5",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.6.1",
     "postgres": "^3.4.7",
     "zod": "^4.1.11"

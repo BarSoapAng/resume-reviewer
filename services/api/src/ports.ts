@@ -8,6 +8,7 @@ import type {
   ResumeProject,
   ResumeVersion,
   ReviewSession,
+  ReviewTurnResponse,
 } from "./domain.js";
 
 export interface Authenticator {
@@ -39,5 +40,5 @@ export interface Compiler {
 }
 
 export interface ReviewEngine {
-  streamMessage(input: { session: ReviewSession; content: string; userId: string }): AsyncIterable<string>;
+  runTurn(input: { session: ReviewSession; content: string; userId: string }): Promise<ReviewTurnResponse>;
 }

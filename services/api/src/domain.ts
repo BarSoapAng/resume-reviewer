@@ -81,3 +81,11 @@ export interface CompileResult {
   cached?: boolean;
   diagnostics: Array<{ message: string; line?: number }>;
 }
+
+export interface ReviewTurnResponse {
+  state: ReviewState;
+  message: string;
+  issues: unknown[];
+  questions: unknown[];
+  edits: unknown[];
+}

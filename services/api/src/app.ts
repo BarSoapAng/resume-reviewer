@@ -123,16 +123,15 @@ export async function createApp(deps: AppDependencies) {
     const session = await deps.repository.getReviewForUser(id, user.userId);
     if (!session) throw new HttpError(404, "Review not found");
     if (!await deps.repository.addReviewMessage(id, user.userId, content)) throw new HttpError(429, "Review turn limit reached");
-    const stream = deps.reviewer.streamMessage({ session, content, userId: user.userId });
+    const turn = await deps.reviewer.runTurn({ session, content, userId: user.userId });
     if (request.headers.accept?.includes("text/event-stream")) {
       reply.raw.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache, no-transform", connection: "keep-alive" });
-      for await (const chunk of stream) reply.raw.write(`data: ${JSON.stringify({ chunk })}\n\n`);
+      reply.raw.write(`data: ${JSON.stringify({ chunk: turn.message })}\n\n`);
+      reply.raw.write(`event: turn\ndata: ${JSON.stringify(turn)}\n\n`);
       reply.raw.write("event: done\ndata: {}\n\n");
       return reply.raw.end();
     }
-    let message = "";
-    for await (const chunk of stream) message += chunk;
-    return { id: session.id, state: session.state, message, issues: [], questions: [], edits: [] };
+    return { id: session.id, ...turn };
   });
 
   app.post("/api/edits/:id/accept", async (request) => {

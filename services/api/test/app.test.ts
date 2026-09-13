@@ -42,7 +42,7 @@ async function app(repo = repository()) {
     repository: repo,
     authenticator: { authenticate: vi.fn(async (token) => token === "valid" ? user : null) },
     compiler: { compile: vi.fn(async () => ({ ok: true, pdfBase64: "cGRm", diagnostics: [], cached: false })) },
-    reviewer: { async *streamMessage() { yield "Review"; } },
+    reviewer: { runTurn: vi.fn(async () => ({ state: "probing" as const, message: "Review", issues: [], questions: [], edits: [] })) },
     kofiVerificationToken: "secret",
   });
 }
@@ -78,6 +78,15 @@ describe("API", () => {
     const response = await instance.inject({ method: "POST", url: `/api/projects/${project.id}/reviews`, headers: { authorization: "Bearer valid" }, payload: {} });
     expect(response.statusCode).toBe(402);
     expect(createEntitledReview).toHaveBeenCalledWith(project.id, user.userId, "v1", "configured");
+    await instance.close();
+  });
+
+  it("returns a structured review turn for the JSON client", async () => {
+    const session = { id: "00000000-0000-4000-8000-000000000004", projectId: project.id, rubricVersion: "v1", state: "probing" as const, model: "configured", startedAt: new Date(), completedAt: null };
+    const instance = await app(repository({ getReviewForUser: vi.fn(async () => session), addReviewMessage: vi.fn(async () => true) }));
+    const response = await instance.inject({ method: "POST", url: `/api/reviews/${session.id}/messages`, headers: { authorization: "Bearer valid" }, payload: { content: "I built the caching layer" } });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ id: session.id, state: "probing", message: "Review", issues: [], questions: [], edits: [] });
     await instance.close();
   });
 

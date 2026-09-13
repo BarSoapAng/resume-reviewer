@@ -1,4 +1,5 @@
 import { createApp } from "./app.js";
+import { loadRubric, runReviewTurn } from "../../../packages/ai/src/index.js";
 import { createSupabaseAuthenticator } from "./auth.js";
 import { createHttpCompiler } from "./compiler.js";
 import { connectRepository } from "./db/repository.js";
@@ -12,8 +13,25 @@ function required(name: string) {
 
 const database = connectRepository(required("DATABASE_URL"));
 const reviewer: ReviewEngine = {
-  async *streamMessage() {
-    throw new Error("Configure the reviewer engine adapter before accepting review messages");
+  async runTurn({ session, content, userId }) {
+    const project = await database.repository.getProjectForUser(session.projectId, userId);
+    if (!project) throw new Error("Review project no longer exists");
+    const turn = await runReviewTurn({
+      discipline: project.discipline,
+      stage: session.state,
+      resume: project.currentSource,
+      facts: [],
+      issues: [],
+      rules: await loadRubric(project.discipline),
+      userMessage: content,
+    }, { model: session.model === "configured" ? undefined : session.model });
+    return {
+      state: turn.stage,
+      message: turn.message,
+      issues: turn.issues,
+      questions: turn.questions,
+      edits: turn.edits.map((edit) => ({ ...edit, baseVersionId: edit.versionId })),
+    };
   },
 };
 const app = await createApp({
