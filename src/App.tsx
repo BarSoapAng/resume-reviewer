@@ -73,7 +73,7 @@ function App() {
   const [reviewOpen, setReviewOpen] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(issues[0]);
   const [resolved, setResolved] = useState<number[]>([]);
-  const [compileState, setCompileState] = useState<"ready" | "compiling">("ready");
+  const [isDemoResume, setIsDemoResume] = useState(true);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -86,17 +86,13 @@ function App() {
     return () => window.clearTimeout(saveTimer);
   }, [source]);
 
-  const compile = () => {
-    setCompileState("compiling");
-    window.setTimeout(() => setCompileState("ready"), 900);
-  };
-
   const upload = (file?: File) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") {
         setSource(reader.result);
+        setIsDemoResume(false);
         setActiveTab("source");
       }
     };
@@ -129,26 +125,35 @@ function App() {
   return (
     <AppShell>
       <Header>
-        <Brand aria-label="Draftwise home">
+        <Brand>
           <BrandMark><Icon name="sparkles" size={17} /></BrandMark>
           <BrandName>draftwise</BrandName>
         </Brand>
         <DocumentMeta>
-          <DocumentTitle>Alex Morgan — Software Resume</DocumentTitle>
+          <DocumentTitle>{isDemoResume ? "Alex Morgan — Software Resume" : "Uploaded resume"}</DocumentTitle>
           <Discipline>Software engineering</Discipline>
         </DocumentMeta>
         <HeaderActions>
           <SavedState><Icon name="check" size={14} /> Saved just now</SavedState>
-          <IconButton aria-label="Version history" title="Version history"><Icon name="history" /></IconButton>
-          <IconButton aria-label="More options" title="More options"><Icon name="more" /></IconButton>
+          <IconButton aria-label="Version history is not connected yet" disabled title="Available after persistence integration"><Icon name="history" /></IconButton>
+          <IconButton aria-label="More options are not available yet" disabled title="More options coming later"><Icon name="more" /></IconButton>
           <Avatar>AM</Avatar>
         </HeaderActions>
       </Header>
 
-      <MobileTabs aria-label="Workspace views">
+      <MobileTabs aria-label="Workspace views" role="tablist">
         {(["review", "source", "preview"] as Tab[]).map((tab) => (
-          <MobileTab key={tab} $active={activeTab === tab} onClick={() => setActiveTab(tab)}>
-            {tab === "review" && unresolvedCount > 0 ? `Review · ${unresolvedCount}` : tab}
+          <MobileTab
+            key={tab}
+            $active={activeTab === tab}
+            aria-selected={activeTab === tab}
+            onClick={() => {
+              if (tab === "review") setReviewOpen(true);
+              setActiveTab(tab);
+            }}
+            role="tab"
+          >
+            {tab === "review" && isDemoResume && unresolvedCount > 0 ? `Review · ${unresolvedCount}` : tab}
           </MobileTab>
         ))}
       </MobileTabs>
@@ -158,17 +163,30 @@ function App() {
           {reviewOpen && (
             <>
               <Panel className={activeTab === "review" ? "" : "mobile-hidden"} defaultSize={27} minSize={22} order={1}>
-                <PanelFrame $mobileActive={activeTab === "review"}>
+                <PanelFrame $mobileActive={activeTab === "review"} aria-label="Resume review" role="tabpanel">
                   <PanelHeader>
                     <PanelTitleWrap>
                       <PanelEyebrow>AI reviewer</PanelEyebrow>
                       <PanelTitle>Let’s make this stronger.</PanelTitle>
                     </PanelTitleWrap>
-                    <IconButton aria-label="Collapse review panel" onClick={() => setReviewOpen(false)} title="Collapse panel">
+                    <IconButton aria-label="Collapse review panel" onClick={() => {
+                      setReviewOpen(false);
+                      setActiveTab("source");
+                    }} title="Collapse panel">
                       <Icon name="collapse" size={16} />
                     </IconButton>
                   </PanelHeader>
                   <ReviewBody>
+                    {!isDemoResume && (
+                      <UnavailableNotice>
+                        <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
+                        <div>
+                          <ReviewerName>Review not started</ReviewerName>
+                          <ReviewerCopy>Your uploaded source stays local. Connect the reviewer backend before generating feedback.</ReviewerCopy>
+                        </div>
+                      </UnavailableNotice>
+                    )}
+                    {isDemoResume && <>
                     <ReviewerIntro>
                       <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
                       <div>
@@ -192,15 +210,19 @@ function App() {
                           key={issue.id}
                           $active={selectedIssue?.id === issue.id}
                           $resolved={resolved.includes(issue.id)}
-                          onClick={() => setSelectedIssue(issue)}
                         >
-                          <IssueTopline>
-                            <Severity $severity={issue.severity}>
-                              {resolved.includes(issue.id) ? "Resolved" : issue.severity}
-                            </Severity>
-                            <span>{issue.location}</span>
-                          </IssueTopline>
-                          <IssueTitle>{issue.label}</IssueTitle>
+                          <IssueSummaryButton
+                            aria-expanded={selectedIssue?.id === issue.id}
+                            onClick={() => setSelectedIssue(issue)}
+                          >
+                            <IssueTopline>
+                              <Severity $severity={issue.severity}>
+                                {resolved.includes(issue.id) ? "Resolved" : issue.severity}
+                              </Severity>
+                              <span>{issue.location}</span>
+                            </IssueTopline>
+                            <IssueTitle>{issue.label}</IssueTitle>
+                          </IssueSummaryButton>
                           {selectedIssue?.id === issue.id && (
                             <IssueExpanded>
                               <p>{issue.detail}</p>
@@ -223,6 +245,7 @@ function App() {
                     {messages.map((item, index) => (
                       <UserMessage key={`${item}-${index}`}>{item}</UserMessage>
                     ))}
+                    </>}
                   </ReviewBody>
                   <Composer>
                     <ComposerInput
@@ -235,11 +258,12 @@ function App() {
                           sendMessage();
                         }
                       }}
-                      placeholder="Answer the reviewer…"
+                      disabled={!isDemoResume}
+                      placeholder={isDemoResume ? "Answer the reviewer…" : "Reviewer backend not connected"}
                       rows={2}
                       value={message}
                     />
-                    <SendButton aria-label="Send message" disabled={!message.trim()} onClick={sendMessage}>
+                    <SendButton aria-label="Send message" disabled={!isDemoResume || !message.trim()} onClick={sendMessage}>
                       <Icon name="arrow" size={17} />
                     </SendButton>
                   </Composer>
@@ -250,7 +274,7 @@ function App() {
           )}
 
           <Panel className={activeTab === "source" ? "" : "mobile-hidden"} defaultSize={reviewOpen ? 37 : 48} minSize={28} order={2}>
-            <PanelFrame $mobileActive={activeTab === "source"}>
+            <PanelFrame $mobileActive={activeTab === "source"} aria-label="LaTeX source" role="tabpanel">
               <ToolHeader>
                 <ToolTitle><Icon name="code" size={16} /> Source</ToolTitle>
                 <ToolActions>
@@ -269,7 +293,7 @@ function App() {
               </ToolHeader>
               <EditorMeta>
                 <FileName>resume.tex</FileName>
-                <SelectedAnchor>{selectedIssue ? "Feedback linked to experience section" : "No issue selected"}</SelectedAnchor>
+                <SelectedAnchor>{isDemoResume && selectedIssue ? "Sample feedback linked to experience section" : "No feedback linked"}</SelectedAnchor>
               </EditorMeta>
               <EditorWrap>
                 <CodeMirror
@@ -301,18 +325,26 @@ function App() {
 
           <ResizeHandle />
           <Panel className={activeTab === "preview" ? "" : "mobile-hidden"} defaultSize={36} minSize={28} order={3}>
-            <PanelFrame $mobileActive={activeTab === "preview"}>
+            <PanelFrame $mobileActive={activeTab === "preview"} aria-label="Resume preview" role="tabpanel">
               <ToolHeader>
                 <ToolTitle>Preview</ToolTitle>
                 <ToolActions>
-                  <CompileButton disabled={compileState === "compiling"} onClick={compile}>
-                    <Icon name="play" size={14} /> {compileState === "compiling" ? "Compiling…" : "Compile"}
+                  <CompileButton disabled title="Available after compiler integration">
+                    <Icon name="play" size={14} /> Compiler offline
                   </CompileButton>
                   <IconButton aria-label="PDF download will be available after compiler integration" disabled title="Available after compiler integration"><Icon name="download" size={16} /></IconButton>
                 </ToolActions>
               </ToolHeader>
               <PreviewCanvas>
+                {!isDemoResume ? (
+                  <PreviewUnavailable>
+                    <PreviewUnavailableIcon><Icon name="code" size={20} /></PreviewUnavailableIcon>
+                    <strong>Preview unavailable</strong>
+                    <span>The compiler service is not connected yet. Your LaTeX source is still saved locally.</span>
+                  </PreviewUnavailable>
+                ) : (
                 <Paper>
+                  <PreviewBadge>Sample preview</PreviewBadge>
                   <ResumeName>ALEX MORGAN</ResumeName>
                   <ContactLine>Vancouver, BC &nbsp;·&nbsp; alex@email.com &nbsp;·&nbsp; github.com/alexm</ContactLine>
                   <ResumeSection>EXPERIENCE</ResumeSection>
@@ -336,6 +368,7 @@ function App() {
                   <SkillsLine><strong>Languages:</strong> TypeScript, Python, Java, SQL, C++</SkillsLine>
                   <SkillsLine><strong>Tools:</strong> React, Node.js, PostgreSQL, Docker, Git</SkillsLine>
                 </Paper>
+                )}
               </PreviewCanvas>
             </PanelFrame>
           </Panel>
@@ -343,17 +376,17 @@ function App() {
       </Workspace>
 
       <FooterBar>
-        <CompileStatus $compiling={compileState === "compiling"}>
-          <StatusDot /> {compileState === "compiling" ? "Compiling resume" : "Compiled successfully"}
+        <CompileStatus>
+          <StatusDot /> Compiler not connected
         </CompileStatus>
         <FooterHint>Changes are saved locally</FooterHint>
         <FooterActions>
-          <QuietButton onClick={downloadSource}><Icon name="download" size={15} /> Download .tex</QuietButton>
-          <PrimaryButton onClick={() => {
+          <FooterDownloadButton onClick={downloadSource}><Icon name="download" size={15} /> Download .tex</FooterDownloadButton>
+          <PrimaryButton disabled={!isDemoResume} onClick={() => {
             setReviewOpen(true);
             setActiveTab("review");
             document.getElementById("review-message")?.focus();
-          }}><Icon name="sparkles" size={15} /> Continue review</PrimaryButton>
+          }}><Icon name="sparkles" size={15} /> Review</PrimaryButton>
         </FooterActions>
       </FooterBar>
     </AppShell>
@@ -389,7 +422,7 @@ const Header = styled.header`
   }
 `;
 
-const Brand = styled.button`
+const Brand = styled.div`
   display: inline-flex;
   align-items: center;
   justify-self: start;
@@ -459,7 +492,7 @@ const SavedState = styled.span`
   @media (max-width: ${breakpoints.mobile}) { display: none; }
 `;
 
-const Avatar = styled.button`
+const Avatar = styled.div`
   display: grid;
   width: 31px;
   height: 31px;
@@ -577,6 +610,13 @@ const ReviewerIntro = styled.div`
   padding-bottom: 17px;
 `;
 
+const UnavailableNotice = styled(ReviewerIntro)`
+  padding: 13px;
+  border: 1px solid ${colors.border};
+  border-radius: 10px;
+  background: ${colors.surfaceStrong};
+`;
+
 const ReviewerIcon = styled.div`
   display: grid;
   width: 31px;
@@ -646,18 +686,25 @@ const IssueList = styled.div`
   gap: 8px;
 `;
 
-const IssueCard = styled.button<{ $active: boolean; $resolved: boolean }>`
+const IssueCard = styled.div<{ $active: boolean; $resolved: boolean }>`
   width: 100%;
-  padding: 13px;
   border: 1px solid ${({ $active }) => ($active ? colors.forest : colors.border)};
   border-radius: 10px;
   color: inherit;
   background: ${({ $active, $resolved }) => ($resolved ? colors.forestPale : $active ? colors.surfaceStrong : "transparent")};
-  text-align: left;
   box-shadow: ${({ $active }) => ($active ? "0 4px 16px rgba(35, 37, 31, 0.06)" : "none")};
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 
   &:hover { border-color: ${colors.borderStrong}; }
+`;
+
+const IssueSummaryButton = styled.button`
+  width: 100%;
+  padding: 13px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
 `;
 
 const IssueTopline = styled.div`
@@ -691,7 +738,7 @@ const IssueTitle = styled.div`
 `;
 
 const IssueExpanded = styled.div`
-  margin-top: 9px;
+  padding: 0 13px 13px;
 
   > p { margin: 0; color: ${colors.inkMuted}; font-size: 12px; line-height: 1.5; }
 `;
@@ -724,18 +771,21 @@ const IssueActions = styled.div`
   margin-top: 11px;
 `;
 
-const TextButton = styled.span`
+const TextButton = styled.button`
   padding: 6px 4px;
+  border: 0;
   color: ${colors.inkMuted};
+  background: transparent;
   font-size: 11px;
   font-weight: 600;
 `;
 
-const AnswerButton = styled.span`
+const AnswerButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 5px;
   padding: 7px 9px;
+  border: 0;
   border-radius: 6px;
   color: white;
   background: ${colors.forest};
@@ -777,6 +827,7 @@ const ComposerInput = styled.textarea`
   line-height: 1.45;
 
   &::placeholder { color: #9a9c94; }
+  &:disabled { cursor: not-allowed; background: #f5f5f1; }
 `;
 
 const SendButton = styled.button`
@@ -911,7 +962,39 @@ const PreviewCanvas = styled.div`
   @media (max-width: ${breakpoints.mobile}) { padding: 14px; }
 `;
 
+const PreviewUnavailable = styled.div`
+  display: flex;
+  width: min(100%, 360px);
+  min-height: 230px;
+  margin: 60px auto;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 9px;
+  padding: 32px;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 12px;
+  color: ${colors.ink};
+  background: rgba(251, 251, 248, 0.92);
+  text-align: center;
+
+  strong { font-size: 14px; }
+  span { max-width: 260px; color: ${colors.inkMuted}; font-size: 12px; line-height: 1.5; }
+`;
+
+const PreviewUnavailableIcon = styled.div`
+  display: grid;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 3px;
+  place-items: center;
+  border-radius: 10px;
+  color: ${colors.forest};
+  background: ${colors.forestPale};
+`;
+
 const Paper = styled.article`
+  position: relative;
   width: min(100%, 520px);
   min-height: 690px;
   margin: 0 auto;
@@ -922,6 +1005,21 @@ const Paper = styled.article`
   font-family: Georgia, serif;
 
   @media (max-width: ${breakpoints.mobile}) { padding: 28px 24px; }
+`;
+
+const PreviewBadge = styled.span`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  color: ${colors.inkMuted};
+  background: ${colors.canvas};
+  font-family: "DM Sans", sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 `;
 
 const ResumeName = styled.h2`
@@ -978,11 +1076,11 @@ const FooterBar = styled.footer`
   background: ${colors.surfaceStrong};
 `;
 
-const CompileStatus = styled.div<{ $compiling: boolean }>`
+const CompileStatus = styled.div`
   display: flex;
   align-items: center;
   gap: 7px;
-  color: ${({ $compiling }) => ($compiling ? colors.inkMuted : colors.forest)};
+  color: ${colors.inkMuted};
   font-size: 11px;
   font-weight: 600;
 `;
@@ -1009,6 +1107,10 @@ const FooterActions = styled.div`
   margin-left: auto;
 `;
 
+const FooterDownloadButton = styled(QuietButton)`
+  @media (max-width: ${breakpoints.mobile}) { display: none; }
+`;
+
 const PrimaryButton = styled.button`
   display: inline-flex;
   height: 34px;
@@ -1023,6 +1125,7 @@ const PrimaryButton = styled.button`
   font-weight: 700;
 
   &:hover { background: ${colors.forestDark}; }
+  &:disabled { cursor: not-allowed; opacity: 0.45; }
 `;
 
 const MobileTabs = styled.nav`
