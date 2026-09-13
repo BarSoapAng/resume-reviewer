@@ -92,6 +92,8 @@ type DisplayIssue = {
   status: ReviewIssue["status"];
 };
 
+type LocalVersion = { id: string; source: string; reason: string; createdAt: string };
+
 const initialIssues: DisplayIssue[] = demoIssues.map((issue) => ({
   ...issue,
   id: String(issue.id),
@@ -132,6 +134,14 @@ function App() {
   const [compileError, setCompileError] = useState<string>();
   const [diagnostics, setCompileDiagnostics] = useState<CompileDiagnostic[]>([]);
   const [pdfUrl, setPdfUrl] = useState<string>();
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [versions, setVersions] = useState<LocalVersion[]>(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem("draftwise:resume-versions") ?? "[]") as LocalVersion[];
+    } catch {
+      return [];
+    }
+  });
   const fileInput = useRef<HTMLInputElement>(null);
   const editor = useRef<ReactCodeMirrorRef>(null);
 
@@ -157,6 +167,10 @@ function App() {
 
     return () => window.clearTimeout(saveTimer);
   }, [source]);
+
+  useEffect(() => {
+    window.localStorage.setItem("draftwise:resume-versions", JSON.stringify(versions.slice(0, 20)));
+  }, [versions]);
 
   useEffect(() => {
     const compileTimer = window.setTimeout(() => void compile(source), 700);
@@ -194,6 +208,7 @@ function App() {
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") {
+        createCheckpoint("Initial upload", reader.result);
         setSource(reader.result);
         setIsDemoResume(false);
         setIssues([]);
@@ -261,6 +276,18 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const createCheckpoint = (reason = "Manual checkpoint", checkpointSource = source) => {
+    setVersions((current) => [{ id: crypto.randomUUID(), source: checkpointSource, reason, createdAt: new Date().toISOString() }, ...current].slice(0, 20));
+  };
+
+  const restoreVersion = (version: LocalVersion) => {
+    createCheckpoint("Before restore");
+    setSource(version.source);
+    setIsDemoResume(false);
+    setHistoryOpen(false);
+    void compile(version.source);
+  };
+
   const resolveIssue = () => {
     if (!selectedIssue) return;
     setIssues((current) => current.map((issue) => issue.id === selectedIssue.id ? { ...issue, status: "skipped" } : issue));
@@ -284,6 +311,7 @@ function App() {
       setEdits((current) => current.map((item) => item.id === edit.id ? { ...item, status: result.status } : item));
       if (result.source) {
         setSource(result.source);
+        createCheckpoint("AI rewrite", result.source);
         await compile(result.source);
       }
     } catch (error) {
@@ -323,8 +351,23 @@ function App() {
         </DocumentMeta>
         <HeaderActions>
           <SavedState><Icon name="check" size={14} /> Saved just now</SavedState>
-          <IconButton aria-label="Version history is not connected yet" disabled title="Available after persistence integration"><Icon name="history" /></IconButton>
-          <IconButton aria-label="More options are not available yet" disabled title="More options coming later"><Icon name="more" /></IconButton>
+          <HistoryWrap>
+            <IconButton aria-expanded={historyOpen} aria-label="Version history" onClick={() => setHistoryOpen((open) => !open)} title="Version history"><Icon name="history" /></IconButton>
+            {historyOpen && (
+              <HistoryPopover>
+                <HistoryHeading>
+                  <strong>Version history</strong>
+                  <TextButton onClick={() => createCheckpoint()}>Checkpoint</TextButton>
+                </HistoryHeading>
+                {versions.length === 0 ? <HistoryEmpty>No checkpoints yet.</HistoryEmpty> : versions.map((version) => (
+                  <HistoryItem key={version.id} onClick={() => restoreVersion(version)}>
+                    <strong>{version.reason}</strong>
+                    <span>{new Date(version.createdAt).toLocaleString()}</span>
+                  </HistoryItem>
+                ))}
+              </HistoryPopover>
+            )}
+          </HistoryWrap>
           <Avatar>AM</Avatar>
         </HeaderActions>
       </Header>
@@ -524,6 +567,7 @@ function App() {
                   onChange={(value) => {
                     setSource(value);
                     setIsDemoResume(false);
+                    setEdits((current) => current.map((edit) => edit.status === "pending" ? { ...edit, status: "stale" } : edit));
                   }}
                   theme="light"
                   value={source}
@@ -701,6 +745,55 @@ const HeaderActions = styled.div`
   align-items: center;
   justify-self: end;
   gap: 7px;
+`;
+
+const HistoryWrap = styled.div`
+  position: relative;
+`;
+
+const HistoryPopover = styled.div`
+  position: absolute;
+  z-index: 20;
+  top: 40px;
+  right: 0;
+  width: 270px;
+  max-height: 360px;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 10px;
+  background: ${colors.surfaceStrong};
+  box-shadow: ${shadows.soft};
+`;
+
+const HistoryHeading = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 4px 8px;
+  font-size: 12px;
+`;
+
+const HistoryItem = styled.button`
+  display: grid;
+  width: 100%;
+  gap: 3px;
+  padding: 9px;
+  border: 0;
+  border-radius: 7px;
+  color: ${colors.ink};
+  background: transparent;
+  text-align: left;
+
+  &:hover { background: ${colors.forestPale}; }
+  strong { font-size: 11px; }
+  span { color: ${colors.inkMuted}; font-size: 9px; }
+`;
+
+const HistoryEmpty = styled.p`
+  margin: 4px;
+  color: ${colors.inkMuted};
+  font-size: 11px;
 `;
 
 const SavedState = styled.span`
