@@ -106,7 +106,9 @@ export async function createApp(deps: AppDependencies) {
     if (!value) throw new HttpError(404, "Project not found");
     if (value === "payment_required") throw new HttpError(402, "A review entitlement is required");
     const turn = await deps.reviewer.runTurn({ session: value, content: "", userId: user.userId });
-    return reply.code(201).send({ id: value.id, ...turn });
+    const saved = await deps.repository.saveReviewTurn(value.id, user.userId, turn);
+    if (!saved) throw new HttpError(404, "Review not found");
+    return reply.code(201).send({ id: value.id, ...saved });
   });
 
   app.get("/api/reviews/:id", async (request) => {
@@ -125,14 +127,16 @@ export async function createApp(deps: AppDependencies) {
     if (!session) throw new HttpError(404, "Review not found");
     if (!await deps.repository.addReviewMessage(id, user.userId, content)) throw new HttpError(429, "Review turn limit reached");
     const turn = await deps.reviewer.runTurn({ session, content, userId: user.userId });
+    const saved = await deps.repository.saveReviewTurn(id, user.userId, turn);
+    if (!saved) throw new HttpError(404, "Review not found");
     if (request.headers.accept?.includes("text/event-stream")) {
       reply.raw.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache, no-transform", connection: "keep-alive" });
-      reply.raw.write(`data: ${JSON.stringify({ chunk: turn.message })}\n\n`);
-      reply.raw.write(`event: turn\ndata: ${JSON.stringify(turn)}\n\n`);
+      reply.raw.write(`data: ${JSON.stringify({ chunk: saved.message })}\n\n`);
+      reply.raw.write(`event: turn\ndata: ${JSON.stringify(saved)}\n\n`);
       reply.raw.write("event: done\ndata: {}\n\n");
       return reply.raw.end();
     }
-    return { id: session.id, ...turn };
+    return { id: session.id, ...saved };
   });
 
   app.post("/api/edits/:id/accept", async (request) => {

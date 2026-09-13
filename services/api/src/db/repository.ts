@@ -2,11 +2,24 @@ import { and, count, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import type { CompileResult, Entitlement, KofiPayment, ProposedEdit, ResumeProject, ResumeVersion, ReviewSession } from "../domain.js";
+import type { CompileResult, Entitlement, KofiPayment, ProposedEdit, ResumeProject, ResumeVersion, ReviewContextSnapshot, ReviewSession, ReviewState, ReviewTurnResponse } from "../domain.js";
 import type { Repository } from "../ports.js";
-import { payments, projects, proposedEdits, reviewEntitlements, reviewMessages, reviewSessions, versions } from "./schema.js";
+import { payments, projects, proposedEdits, resumeFacts, reviewEntitlements, reviewIssues, reviewMessages, reviewSessions, versions } from "./schema.js";
 
 type Database = ReturnType<typeof drizzle>;
+
+const transitions: Record<ReviewState, readonly ReviewState[]> = {
+  imported: ["initial_review"], initial_review: ["probing", "ready_to_edit"], probing: ["ready_to_edit"],
+  ready_to_edit: ["editing"], editing: ["editing", "final_review"], final_review: ["editing", "complete"], complete: [],
+};
+
+function validTransition(from: ReviewState, to: ReviewState) {
+  return from === to || transitions[from].includes(to);
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
 function project(row: typeof projects.$inferSelect): ResumeProject {
   return { id: row.id, userId: row.userId, title: row.title, discipline: row.discipline, currentSource: row.currentSource, currentVersionId: row.currentVersionId, createdAt: row.createdAt, updatedAt: row.updatedAt };
@@ -93,6 +106,72 @@ export class PostgresRepository implements Repository {
   async getReviewForUser(reviewId: string, userId: string) {
     const [row] = await this.db.select({ value: reviewSessions }).from(reviewSessions).innerJoin(projects, eq(projects.id, reviewSessions.projectId)).where(and(eq(reviewSessions.id, reviewId), eq(projects.userId, userId))).limit(1);
     return row ? review(row.value) : null;
+  }
+
+  async getReviewContext(reviewId: string, userId: string): Promise<ReviewContextSnapshot | null> {
+    const [owned] = await this.db.select({ value: projects }).from(reviewSessions).innerJoin(projects, eq(projects.id, reviewSessions.projectId)).where(and(eq(reviewSessions.id, reviewId), eq(projects.userId, userId))).limit(1);
+    if (!owned) return null;
+    const [facts, issues, latestMessages] = await Promise.all([
+      this.db.select().from(resumeFacts).where(eq(resumeFacts.sessionId, reviewId)).orderBy(resumeFacts.createdAt),
+      this.db.select().from(reviewIssues).where(eq(reviewIssues.sessionId, reviewId)).orderBy(reviewIssues.createdAt),
+      this.db.select().from(reviewMessages).where(eq(reviewMessages.sessionId, reviewId)).orderBy(sql`${reviewMessages.createdAt} desc`).limit(6),
+    ]);
+    return {
+      project: project(owned.value),
+      facts: facts.map((fact) => ({ id: fact.id, projectId: fact.projectId, subject: fact.subject, section: fact.section, statement: fact.statement, source: fact.sourceType as "resume" | "user_message", sourceId: fact.sourceId, createdAt: fact.createdAt.toISOString() })),
+      issues: issues.map((issue) => ({ id: issue.id, ruleId: issue.ruleId, severity: issue.severity, category: issue.category, description: issue.description, reasoning: issue.reasoning, sourceAnchor: issue.sourceAnchor as ReviewTurnResponse["issues"][number]["sourceAnchor"], status: issue.status })),
+      recentMessages: latestMessages.reverse().filter((message): message is typeof message & { role: "user" | "assistant" } => message.role !== "system").map(({ role, content }) => ({ role, content })),
+    };
+  }
+
+  async saveReviewTurn(reviewId: string, userId: string, turn: ReviewTurnResponse): Promise<ReviewTurnResponse | null> {
+    const session = await this.getReviewForUser(reviewId, userId);
+    const context = await this.getReviewContext(reviewId, userId);
+    if (!session || !context) return null;
+    if (!validTransition(session.state, turn.state)) throw new Error(`Invalid review transition: ${session.state} -> ${turn.state}`);
+    return this.db.transaction(async (tx) => {
+      const factIds = new Map<string, string>();
+      const savedFacts: NonNullable<ReviewTurnResponse["facts"]> = [];
+      for (const fact of turn.facts ?? []) {
+        const existing = isUuid(fact.id) && context.facts.some((value) => value.id === fact.id);
+        const id = existing ? fact.id : randomUUID();
+        const values = { projectId: context.project.id, sessionId: reviewId, subject: fact.subject, section: fact.section, statement: fact.statement, sourceType: fact.source, sourceId: fact.sourceId };
+        if (existing) await tx.update(resumeFacts).set(values).where(and(eq(resumeFacts.id, id), eq(resumeFacts.sessionId, reviewId)));
+        else await tx.insert(resumeFacts).values({ id, ...values });
+        factIds.set(fact.id, id);
+        savedFacts.push({ ...fact, id, projectId: context.project.id, createdAt: existing ? fact.createdAt : new Date().toISOString() });
+      }
+
+      const issueIds = new Map<string, string>();
+      const savedIssues: ReviewTurnResponse["issues"] = [];
+      for (const issue of turn.issues) {
+        const existing = isUuid(issue.id) && context.issues.some((value) => value.id === issue.id);
+        const id = existing ? issue.id : randomUUID();
+        const sourceAnchor = { ...issue.sourceAnchor, versionId: context.project.currentVersionId ?? issue.sourceAnchor.versionId };
+        const values = { ruleId: issue.ruleId, severity: issue.severity, category: issue.category, description: issue.description, reasoning: issue.reasoning, sourceAnchor, status: issue.status, resolvedAt: issue.status === "resolved" ? new Date() : null };
+        if (existing) await tx.update(reviewIssues).set(values).where(and(eq(reviewIssues.id, id), eq(reviewIssues.sessionId, reviewId)));
+        else await tx.insert(reviewIssues).values({ id, sessionId: reviewId, ...values });
+        issueIds.set(issue.id, id);
+        savedIssues.push({ ...issue, id, sourceAnchor });
+      }
+
+      const allowedFactIds = new Set([...context.facts.map((fact) => fact.id), ...factIds.values()]);
+      const savedEdits: ReviewTurnResponse["edits"] = [];
+      for (const edit of turn.edits) {
+        const id = randomUUID();
+        const mappedIssueIds = edit.issueIds.map((value) => issueIds.get(value) ?? value).filter(isUuid);
+        const citations = (edit.citations ?? []).map((citation) => ({ ...citation, factId: factIds.get(citation.factId) ?? citation.factId }));
+        if (citations.some((citation) => !allowedFactIds.has(citation.factId))) continue;
+        const baseVersionId = context.project.currentVersionId;
+        if (!baseVersionId) continue;
+        await tx.insert(proposedEdits).values({ id, sessionId: reviewId, baseVersionId, oldText: edit.oldText, newText: edit.newText, explanation: edit.explanation, issueIds: mappedIssueIds, citations });
+        savedEdits.push({ ...edit, id, baseVersionId, issueIds: mappedIssueIds, citations });
+      }
+
+      if (turn.message.trim()) await tx.insert(reviewMessages).values({ sessionId: reviewId, role: "assistant", content: turn.message });
+      await tx.update(reviewSessions).set({ state: turn.state, ...(turn.state === "complete" ? { completedAt: new Date() } : {}) }).where(eq(reviewSessions.id, reviewId));
+      return { ...turn, facts: savedFacts, issues: savedIssues, questions: turn.questions.map((question) => ({ ...question, issueIds: question.issueIds.map((value) => issueIds.get(value) ?? value).filter(isUuid) })), edits: savedEdits };
+    });
   }
 
   async addReviewMessage(reviewId: string, userId: string, content: string) {

@@ -8,6 +8,7 @@ import type {
   ResumeProject,
   ResumeVersion,
   ReviewSession,
+  ReviewContextSnapshot,
   ReviewTurnResponse,
 } from "./domain.js";
 
@@ -26,6 +27,8 @@ export interface Repository {
   createReview(projectId: string, userId: string, rubricVersion: string, model: string): Promise<ReviewSession | null>;
   createEntitledReview(projectId: string, userId: string, rubricVersion: string, model: string): Promise<ReviewSession | "payment_required" | null>;
   getReviewForUser(reviewId: string, userId: string): Promise<ReviewSession | null>;
+  getReviewContext(reviewId: string, userId: string): Promise<ReviewContextSnapshot | null>;
+  saveReviewTurn(reviewId: string, userId: string, turn: ReviewTurnResponse): Promise<ReviewTurnResponse | null>;
   addReviewMessage(reviewId: string, userId: string, content: string): Promise<boolean>;
   getEditForUser(editId: string, userId: string): Promise<ProposedEdit | null>;
   rejectEdit(editId: string, userId: string): Promise<boolean>;

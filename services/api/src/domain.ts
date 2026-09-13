@@ -85,7 +85,42 @@ export interface CompileResult {
 export interface ReviewTurnResponse {
   state: ReviewState;
   message: string;
-  issues: unknown[];
-  questions: unknown[];
-  edits: unknown[];
+  issues: Array<{
+    id: string;
+    ruleId: string;
+    severity: "high" | "medium" | "low";
+    category: string;
+    description: string;
+    reasoning: string;
+    sourceAnchor: { versionId: string; exactText: string; occurrence: number };
+    status: "open" | "probing" | "resolved" | "skipped";
+  }>;
+  questions: Array<{ id: string; issueIds: string[]; text: string; priority?: "high" | "medium" | "low" }>;
+  facts?: Array<{
+    id: string;
+    projectId: string;
+    subject: string | null;
+    section: string | null;
+    statement: string;
+    source: "resume" | "user_message";
+    sourceId: string;
+    createdAt: string;
+  }>;
+  edits: Array<{
+    id: string;
+    baseVersionId: string;
+    issueIds: string[];
+    oldText: string;
+    newText: string;
+    explanation: string;
+    status: "pending" | "accepted" | "rejected" | "stale";
+    citations?: Array<{ factId: string; claim: string }>;
+  }>;
+}
+
+export interface ReviewContextSnapshot {
+  project: ResumeProject;
+  facts: NonNullable<ReviewTurnResponse["facts"]>;
+  issues: ReviewTurnResponse["issues"];
+  recentMessages: Array<{ role: "user" | "assistant"; content: string }>;
 }

@@ -26,6 +26,8 @@ function repository(overrides: Partial<Repository> = {}): Repository {
     createReview: vi.fn(),
     createEntitledReview: vi.fn(async () => "payment_required"),
     getReviewForUser: vi.fn(),
+    getReviewContext: vi.fn(),
+    saveReviewTurn: vi.fn(async (_reviewId, _userId, turn) => turn),
     addReviewMessage: vi.fn(),
     getEditForUser: vi.fn(),
     rejectEdit: vi.fn(),
@@ -92,10 +94,12 @@ describe("API", () => {
 
   it("returns a structured review turn for the JSON client", async () => {
     const session = { id: "00000000-0000-4000-8000-000000000004", projectId: project.id, rubricVersion: "v1", state: "probing" as const, model: "configured", startedAt: new Date(), completedAt: null };
-    const instance = await app(repository({ getReviewForUser: vi.fn(async () => session), addReviewMessage: vi.fn(async () => true) }));
+    const saveReviewTurn = vi.fn(async (_reviewId, _userId, turn) => turn);
+    const instance = await app(repository({ getReviewForUser: vi.fn(async () => session), addReviewMessage: vi.fn(async () => true), saveReviewTurn }));
     const response = await instance.inject({ method: "POST", url: `/api/reviews/${session.id}/messages`, headers: { authorization: "Bearer valid" }, payload: { content: "I built the caching layer" } });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ id: session.id, state: "probing", message: "Review", issues: [], questions: [], edits: [] });
+    expect(saveReviewTurn).toHaveBeenCalledWith(session.id, user.userId, expect.objectContaining({ message: "Review" }));
     await instance.close();
   });
 

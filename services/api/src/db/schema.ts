@@ -88,6 +88,8 @@ export const proposedEdits = pgTable("proposed_edits", {
   oldText: text("old_text").notNull(),
   newText: text("new_text").notNull(),
   explanation: text("explanation").notNull(),
+  issueIds: uuid("issue_ids").array().notNull().default([]),
+  citations: jsonb("citations").notNull().default([]),
   status: editStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
