@@ -3,7 +3,8 @@ import { resolveSourceAnchor } from "./anchors.js";
 import { validateAndApplyEdit } from "./edits.js";
 import { reviewResume } from "./simple-review.js";
 import { InvalidReviewTransitionError, transitionReview } from "./state-machine.js";
-import type { EditProposal, ResumeFact, ReviewIssue } from "./schemas.js";
+import { validateReviewTurn } from "./turn-validation.js";
+import type { EditProposal, ResumeFact, ReviewIssue, ReviewTurn } from "./schemas.js";
 
 const issue: ReviewIssue = {
   id: "i1", ruleId: "SWE_IMPACT_001", severity: "high", category: "impact",
@@ -47,4 +48,13 @@ describe("edit validation", () => {
 describe("offline review", () => {
   it("asks no more than three questions", () => expect(reviewResume("- Built app\n- Helped team\n- Improved speed\n- Worked on tests", "software").questions).toHaveLength(3));
   it("usually leaves an already substantive bullet alone", () => expect(reviewResume("- Reduced API latency from 800 ms to 200 ms by implementing Redis caching for repeated catalog queries", "software").issues).toHaveLength(0));
+});
+
+describe("model turn validation", () => {
+  const turn: ReviewTurn = { message: "", stage: "probing", issues: [], questions: [], facts: [], edits: [] };
+  const context = { currentStage: "probing" as const, currentVersionId: "v1", resumeSource: "Built app", existingFacts: [], existingIssues: [issue], allowedSourceIds: new Set(["m1"]) };
+
+  it("rejects an invalid recommended transition", () => expect(validateReviewTurn({ ...turn, recommendedTransition: "complete" }, context)).toMatchObject({ valid: false }));
+  it("rejects facts not tied to the current resume or user messages", () => expect(validateReviewTurn({ ...turn, facts: [{ ...fact, sourceId: "made-up-message" }] }, context)).toMatchObject({ valid: false }));
+  it("rejects questions referencing unknown issues", () => expect(validateReviewTurn({ ...turn, questions: [{ id: "q1", issueIds: ["missing"], priority: "high", text: "Question?" }] }, context)).toMatchObject({ valid: false }));
 });
