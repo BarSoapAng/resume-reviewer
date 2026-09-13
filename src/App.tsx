@@ -37,6 +37,7 @@ const initialLatex = `\\documentclass[10pt]{article}
 \\end{document}`;
 
 type Tab = "review" | "source" | "preview";
+const tabs: Tab[] = ["review", "source", "preview"];
 
 const issues = [
   {
@@ -74,6 +75,7 @@ function App() {
   const [selectedIssue, setSelectedIssue] = useState(issues[0]);
   const [resolved, setResolved] = useState<number[]>([]);
   const [isDemoResume, setIsDemoResume] = useState(source === initialLatex);
+  const [discipline, setDiscipline] = useState<"software" | "mechanical">("software");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<string[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -122,6 +124,18 @@ function App() {
 
   const unresolvedCount = issues.length - resolved.length;
 
+  const selectTab = (tab: Tab) => {
+    if (tab === "review") setReviewOpen(true);
+    setActiveTab(tab);
+  };
+
+  const moveTabFocus = (currentTab: Tab, direction: 1 | -1) => {
+    const nextIndex = (tabs.indexOf(currentTab) + direction + tabs.length) % tabs.length;
+    const nextTab = tabs[nextIndex]!;
+    selectTab(nextTab);
+    document.getElementById(`workspace-tab-${nextTab}`)?.focus();
+  };
+
   return (
     <AppShell>
       <Header>
@@ -131,7 +145,14 @@ function App() {
         </Brand>
         <DocumentMeta>
           <DocumentTitle>{isDemoResume ? "Alex Morgan — Software Resume" : "Uploaded resume"}</DocumentTitle>
-          <Discipline>Software engineering</Discipline>
+          <Discipline
+            aria-label="Resume discipline"
+            onChange={(event) => setDiscipline(event.target.value as "software" | "mechanical")}
+            value={discipline}
+          >
+            <option value="software">Software engineering</option>
+            <option value="mechanical">Mechanical engineering</option>
+          </Discipline>
         </DocumentMeta>
         <HeaderActions>
           <SavedState><Icon name="check" size={14} /> Saved just now</SavedState>
@@ -142,16 +163,20 @@ function App() {
       </Header>
 
       <MobileTabs aria-label="Workspace views" role="tablist">
-        {(["review", "source", "preview"] as Tab[]).map((tab) => (
+        {tabs.map((tab) => (
           <MobileTab
             key={tab}
             $active={activeTab === tab}
+            aria-controls={`workspace-panel-${tab}`}
             aria-selected={activeTab === tab}
-            onClick={() => {
-              if (tab === "review") setReviewOpen(true);
-              setActiveTab(tab);
+            id={`workspace-tab-${tab}`}
+            onClick={() => selectTab(tab)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowRight") moveTabFocus(tab, 1);
+              if (event.key === "ArrowLeft") moveTabFocus(tab, -1);
             }}
             role="tab"
+            tabIndex={activeTab === tab ? 0 : -1}
           >
             {tab === "review" && isDemoResume && unresolvedCount > 0 ? `Review · ${unresolvedCount}` : tab}
           </MobileTab>
@@ -163,7 +188,7 @@ function App() {
           {reviewOpen && (
             <>
               <Panel className={activeTab === "review" ? "" : "mobile-hidden"} defaultSize={27} minSize={22} order={1}>
-                <PanelFrame $mobileActive={activeTab === "review"} aria-label="Resume review" role="tabpanel">
+                <PanelFrame $mobileActive={activeTab === "review"} aria-labelledby="workspace-tab-review" id="workspace-panel-review" role="tabpanel">
                   <PanelHeader>
                     <PanelTitleWrap>
                       <PanelEyebrow>{isDemoResume ? "AI reviewer · Demo" : "AI reviewer"}</PanelEyebrow>
@@ -274,7 +299,7 @@ function App() {
           )}
 
           <Panel className={activeTab === "source" ? "" : "mobile-hidden"} defaultSize={reviewOpen ? 37 : 48} minSize={28} order={2}>
-            <PanelFrame $mobileActive={activeTab === "source"} aria-label="LaTeX source" role="tabpanel">
+            <PanelFrame $mobileActive={activeTab === "source"} aria-labelledby="workspace-tab-source" id="workspace-panel-source" role="tabpanel">
               <ToolHeader>
                 <ToolTitle><Icon name="code" size={16} /> Source</ToolTitle>
                 <ToolActions>
@@ -328,7 +353,7 @@ function App() {
 
           <ResizeHandle />
           <Panel className={activeTab === "preview" ? "" : "mobile-hidden"} defaultSize={36} minSize={28} order={3}>
-            <PanelFrame $mobileActive={activeTab === "preview"} aria-label="Resume preview" role="tabpanel">
+            <PanelFrame $mobileActive={activeTab === "preview"} aria-labelledby="workspace-tab-preview" id="workspace-panel-preview" role="tabpanel">
               <ToolHeader>
                 <ToolTitle>Preview</ToolTitle>
                 <ToolActions>
@@ -384,7 +409,7 @@ function App() {
         </CompileStatus>
         <FooterHint>Changes are saved locally</FooterHint>
         <FooterActions>
-          <FooterDownloadButton onClick={downloadSource}><Icon name="download" size={15} /> Download .tex</FooterDownloadButton>
+          <FooterDownloadButton aria-label="Download .tex source" onClick={downloadSource}><Icon name="download" size={15} /><span>Download .tex</span></FooterDownloadButton>
           <PrimaryButton disabled={!isDemoResume} onClick={() => {
             setReviewOpen(true);
             setActiveTab("review");
@@ -464,7 +489,7 @@ const DocumentTitle = styled.span`
   font-weight: 600;
 `;
 
-const Discipline = styled.span`
+const Discipline = styled.select`
   padding: 5px 8px;
   border: 1px solid ${colors.border};
   border-radius: 7px;
@@ -814,6 +839,11 @@ const Composer = styled.div`
   border-radius: 10px;
   background: ${colors.surfaceStrong};
   box-shadow: ${shadows.soft};
+
+  &:focus-within {
+    border-color: ${colors.forest};
+    box-shadow: 0 0 0 2px ${colors.forestPale};
+  }
 `;
 
 const ComposerInput = styled.textarea`
@@ -823,13 +853,13 @@ const ComposerInput = styled.textarea`
   padding: 12px 43px 12px 12px;
   resize: none;
   border: 0;
-  outline: 0 !important;
   color: ${colors.ink};
   background: transparent;
   font-size: 12px;
   line-height: 1.45;
 
   &::placeholder { color: #9a9c94; }
+  &:focus-visible { outline: none; }
   &:disabled { cursor: not-allowed; background: #f5f5f1; }
 `;
 
@@ -1111,7 +1141,13 @@ const FooterActions = styled.div`
 `;
 
 const FooterDownloadButton = styled(QuietButton)`
-  @media (max-width: ${breakpoints.mobile}) { display: none; }
+  @media (max-width: ${breakpoints.mobile}) {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+
+    span { display: none; }
+  }
 `;
 
 const PrimaryButton = styled.button`
