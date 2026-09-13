@@ -13,7 +13,7 @@ const issue: ReviewIssue = {
 };
 
 const fact: ResumeFact = {
-  id: "f1", projectId: "p1", statement: "API latency fell from 800 ms to 200 ms after adding Redis caching",
+  id: "f1", projectId: "p1", subject: null, section: null, statement: "API latency fell from 800 ms to 200 ms after adding Redis caching",
   source: "user_message", sourceId: "m1", createdAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -51,7 +51,7 @@ describe("offline review", () => {
 });
 
 describe("model turn validation", () => {
-  const turn: ReviewTurn = { message: "", stage: "probing", issues: [], questions: [], facts: [], edits: [] };
+  const turn: ReviewTurn = { message: "", stage: "probing", issues: [], questions: [], facts: [], edits: [], recommendedTransition: null };
   const context = { currentStage: "probing" as const, currentVersionId: "v1", resumeSource: "Built app", existingFacts: [], existingIssues: [issue], allowedSourceIds: new Set(["m1"]) };
 
   it("rejects an invalid recommended transition", () => expect(validateReviewTurn({ ...turn, recommendedTransition: "complete" }, context)).toMatchObject({ valid: false }));

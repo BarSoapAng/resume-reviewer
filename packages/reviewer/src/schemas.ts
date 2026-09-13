@@ -22,8 +22,8 @@ export const SourceAnchorSchema = z.object({
 export const ResumeFactSchema = z.object({
   id: z.string().min(1),
   projectId: z.string().min(1),
-  subject: z.string().min(1).optional(),
-  section: z.string().min(1).optional(),
+  subject: z.string().min(1).nullable(),
+  section: z.string().min(1).nullable(),
   statement: z.string().min(1),
   source: z.enum(["resume", "user_message"]),
   sourceId: z.string().min(1),
@@ -70,7 +70,7 @@ export const ReviewTurnSchema = z.object({
   questions: z.array(QuestionSchema).max(3),
   facts: z.array(ResumeFactSchema),
   edits: z.array(EditProposalSchema),
-  recommendedTransition: ReviewStageSchema.optional(),
+  recommendedTransition: ReviewStageSchema.nullable(),
 });
 
 export type Discipline = z.infer<typeof DisciplineSchema>;
