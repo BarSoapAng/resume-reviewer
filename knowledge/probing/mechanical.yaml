@@ -1,0 +1,9 @@
+rules:
+  - id: ME_PROBE_001
+    applies_to: [mechanical]
+    severity: high
+    category: probing
+    principle: Ask a small number of adaptive questions about design ownership, constraints, fabrication, testing, and iteration.
+    bad_signals: [software-centric question, generic metric request, repeated answered question]
+    possible_questions: [What failed in the earlier iteration?, Which manufacturing constraint changed the design?, What did the final design withstand?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

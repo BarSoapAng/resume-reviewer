@@ -1,0 +1,9 @@
+rules:
+  - id: ME_DESIGN_001
+    applies_to: [mechanical]
+    severity: high
+    category: design
+    principle: Design bullets should explain geometry or system choices and their governing requirements.
+    bad_signals: [modeled in CAD without purpose, no requirements, no iteration]
+    possible_questions: [What geometry did you own?, What load, envelope, tolerance, weight, or cost requirement mattered?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

@@ -1,0 +1,9 @@
+rules:
+  - id: ME_MANUFACTURING_001
+    applies_to: [mechanical]
+    severity: medium
+    category: manufacturing
+    principle: Manufacturing work should identify the real process and show DFM or DFA reasoning where material.
+    bad_signals: [built parts, unspecified process, material with no rationale, no manufacturability constraint]
+    possible_questions: [Which manufacturing process and material did you use?, What did you change for manufacturability or assembly?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

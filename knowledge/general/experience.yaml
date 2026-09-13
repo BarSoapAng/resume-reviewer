@@ -1,0 +1,9 @@
+rules:
+  - id: GEN_EXPERIENCE_001
+    applies_to: [software, mechanical]
+    severity: high
+    category: experience
+    principle: Experience bullets should distinguish personal contribution, method, and resulting value.
+    bad_signals: [responsibility-only bullet, vague team attribution, no mechanism, no result]
+    possible_questions: [What did you personally own?, How did you do it?, What changed as a result?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

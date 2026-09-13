@@ -1,0 +1,9 @@
+rules:
+  - id: SWE_PROBE_001
+    applies_to: [software]
+    severity: high
+    category: probing
+    principle: Ask a small number of adaptive questions about ownership, mechanism, difficulty, and meaningful impact.
+    bad_signals: [generic metric request, repeated answered question, question unrelated to issue]
+    possible_questions: [What part did you personally own?, What made the implementation difficult?, Did this replace an existing workflow?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

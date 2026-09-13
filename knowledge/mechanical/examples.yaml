@@ -1,0 +1,9 @@
+rules:
+  - id: ME_CREDIBILITY_001
+    applies_to: [mechanical]
+    severity: medium
+    category: credibility
+    principle: Physical claims require grounded units, conditions, materials, tolerances, and measurement context.
+    bad_signals: [unitless physical result, tolerance without process, FEA result without boundary conditions]
+    possible_questions: [Under what conditions was that measured?, How did simulation compare with physical testing?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

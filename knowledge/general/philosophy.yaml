@@ -1,0 +1,9 @@
+rules:
+  - id: GEN_TRUTH_001
+    applies_to: [software, mechanical]
+    severity: high
+    category: factual-grounding
+    principle: Every substantive claim must trace to the resume or a verified user statement.
+    bad_signals: [unsupported number, unsupported technology, invented ownership, invented outcome]
+    possible_questions: [What did you personally do, and which details can you verify?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

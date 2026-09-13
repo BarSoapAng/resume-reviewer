@@ -1,0 +1,9 @@
+rules:
+  - id: GEN_EDUCATION_001
+    applies_to: [software, mechanical]
+    severity: low
+    category: education
+    principle: Education should foreground degree, institution, graduation timing, and only relevant supporting detail.
+    bad_signals: [missing graduation date, long generic coursework list, unexplained credentials]
+    possible_questions: [What is your expected graduation month and year?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

@@ -1,0 +1,9 @@
+rules:
+  - id: GEN_FORMAT_001
+    applies_to: [software, mechanical]
+    severity: medium
+    category: formatting
+    principle: Formatting should be readable, consistent, concise, and preserve the existing template by default.
+    bad_signals: [inconsistent dates, dense paragraphs, excessive whitespace, content spilling beyond one page]
+    possible_questions: [Is this layout intentional, or should we focus only on content?]
+    constraints: { may_restructure: false, may_use_confirmed_information: true, may_invent_information: false }

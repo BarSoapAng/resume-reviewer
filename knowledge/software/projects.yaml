@@ -1,0 +1,9 @@
+rules:
+  - id: SWE_PROJECT_001
+    applies_to: [software]
+    severity: medium
+    category: software-projects
+    principle: Project descriptions should show a real engineering problem rather than a stack inventory.
+    bad_signals: [technology list without rationale, tutorial-like description, no users or purpose]
+    possible_questions: [Why did you choose this architecture?, What was technically difficult?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

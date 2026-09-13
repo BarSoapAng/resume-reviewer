@@ -1,0 +1,9 @@
+rules:
+  - id: ME_TESTING_001
+    applies_to: [mechanical]
+    severity: high
+    category: testing
+    principle: Testing claims should name the method, acceptance criterion, observed result, and resulting iteration where known.
+    bad_signals: [tested design, no test conditions, no pass criterion, simulation without interpretation]
+    possible_questions: [What test or simulation did you perform?, What load or condition was applied?, What changed after the result?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

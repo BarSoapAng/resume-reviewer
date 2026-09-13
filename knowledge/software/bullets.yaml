@@ -1,0 +1,9 @@
+rules:
+  - id: SWE_IMPACT_001
+    applies_to: [software]
+    severity: high
+    category: impact
+    principle: Strong software bullets make contribution, technical mechanism, and impact clear.
+    bad_signals: [vague contribution, unclear ownership, no technical mechanism, no outcome]
+    possible_questions: [What part did you personally build?, What changed for users or developers?, Was there a meaningful before and after?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

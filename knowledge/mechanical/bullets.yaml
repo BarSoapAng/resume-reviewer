@@ -1,0 +1,9 @@
+rules:
+  - id: ME_DESIGN_IMPACT_001
+    applies_to: [mechanical]
+    severity: high
+    category: design-impact
+    principle: Strong mechanical bullets connect design ownership, constraints, engineering method, and physical result.
+    bad_signals: [vague design claim, unclear component ownership, no constraint, no validation]
+    possible_questions: [What part did you design?, Which constraints controlled the design?, How did you validate it?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

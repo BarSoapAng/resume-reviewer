@@ -1,0 +1,9 @@
+rules:
+  - id: SWE_CREDIBILITY_001
+    applies_to: [software]
+    severity: medium
+    category: credibility
+    principle: Scale and performance claims need concrete, internally consistent evidence.
+    bad_signals: [implausible scale, metric without baseline, result disconnected from action]
+    possible_questions: [How was that result measured?, What were the before and after conditions?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

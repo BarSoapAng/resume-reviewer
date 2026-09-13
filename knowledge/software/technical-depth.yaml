@@ -1,0 +1,9 @@
+rules:
+  - id: SWE_DEPTH_001
+    applies_to: [software]
+    severity: medium
+    category: technical-depth
+    principle: Include technologies when they clarify a meaningful engineering decision, constraint, or mechanism.
+    bad_signals: [buzzword stuffing, unexplained architecture, generic performance claim]
+    possible_questions: [Why was that technology necessary?, What reliability or scale constraint shaped the solution?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

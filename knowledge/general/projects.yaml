@@ -1,0 +1,9 @@
+rules:
+  - id: GEN_PROJECT_001
+    applies_to: [software, mechanical]
+    severity: medium
+    category: projects
+    principle: Projects should establish the problem, engineering contribution, technical choices, and evidence of success.
+    bad_signals: [feature list only, unexplained technology list, unclear problem]
+    possible_questions: [What problem did this solve?, Which part was your work?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

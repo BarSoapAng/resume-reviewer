@@ -1,0 +1,9 @@
+rules:
+  - id: SWE_INTERNSHIP_001
+    applies_to: [software]
+    severity: high
+    category: internships
+    principle: Internship bullets should separate the candidate's ownership from the team's broader work.
+    bad_signals: [we built, assisted team, participated in, unclear scope]
+    possible_questions: [Which component did you own?, Who used the result?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }

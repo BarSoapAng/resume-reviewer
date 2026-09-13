@@ -1,0 +1,9 @@
+rules:
+  - id: GEN_WORDING_001
+    applies_to: [software, mechanical]
+    severity: medium
+    category: wording
+    principle: Use direct specific language and remove filler without overstating the work.
+    bad_signals: [helped with, worked on, responsible for, various, successfully]
+    possible_questions: [What concrete action does this phrase hide?]
+    constraints: { may_restructure: true, may_use_confirmed_information: true, may_invent_information: false }
