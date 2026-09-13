@@ -62,6 +62,12 @@ export type CompileResult = {
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
+export class ApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const session = await getSession();
   const response = await fetch(`${baseUrl}${path}`, {
@@ -75,7 +81,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(detail || `Request failed (${response.status})`);
+    let message = detail;
+    try { message = (JSON.parse(detail) as { error?: string }).error ?? detail; } catch { /* use response text */ }
+    throw new ApiError(response.status, message || `Request failed (${response.status})`);
   }
 
   return response.json() as Promise<T>;
@@ -92,6 +100,13 @@ export async function createProject(title: string, discipline: Discipline, sourc
   return request<{ id: string; currentVersionId: string }>("/api/projects", {
     method: "POST",
     body: JSON.stringify({ title, discipline, currentSource: source }),
+  });
+}
+
+export async function updateProject(projectId: string, patch: { title?: string; discipline?: Discipline; source?: string }) {
+  return request<{ id: string; currentSource: string }>(`/api/projects/${projectId}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
   });
 }
 

@@ -16,11 +16,13 @@ import {
   decideEdit,
   sendReviewMessage,
   startReview,
+  updateProject,
   type CompileDiagnostic,
   type Discipline as DisciplineType,
   type EditProposal,
   type ReviewIssue,
   type ReviewState,
+  ApiError,
 } from "./lib/api";
 import { getSession, signIn, signOut, supabase } from "./lib/supabase";
 
@@ -130,10 +132,12 @@ function App() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
   const [reviewId, setReviewId] = useState<string>();
+  const [projectId, setProjectId] = useState<string>();
   const [reviewState, setReviewState] = useState<ReviewState>("imported");
   const [edits, setEdits] = useState<EditProposal[]>([]);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewError, setReviewError] = useState<string>();
+  const [paymentRequired, setPaymentRequired] = useState(false);
   const [compileState, setCompileState] = useState<"idle" | "compiling" | "success" | "error">("idle");
   const [compileError, setCompileError] = useState<string>();
   const [diagnostics, setCompileDiagnostics] = useState<CompileDiagnostic[]>([]);
@@ -179,6 +183,14 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem("draftwise:resume-versions", JSON.stringify(versions.slice(0, 20)));
   }, [versions]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const timer = window.setTimeout(() => {
+      void updateProject(projectId, { source }).catch(() => undefined);
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [projectId, source]);
 
   useEffect(() => {
     void getSession().then((session) => setUserEmail(session?.user.email));
@@ -230,6 +242,7 @@ function App() {
         setIssues([]);
         setSelectedIssue(undefined);
         setReviewId(undefined);
+        setProjectId(undefined);
         setReviewState("imported");
         setMessages([]);
         setEdits([]);
@@ -256,6 +269,7 @@ function App() {
     setMessage("");
     setReviewBusy(true);
     setReviewError(undefined);
+    setPaymentRequired(false);
     try {
       applyTurn(await sendReviewMessage(reviewId, nextMessage));
     } catch (error) {
@@ -276,12 +290,14 @@ function App() {
     setReviewBusy(true);
     setReviewError(undefined);
     try {
-      const project = await createProject("Technical resume", discipline, source);
-      const turn = await startReview(project.id);
+      const currentProjectId = projectId ?? (await createProject("Technical resume", discipline, source)).id;
+      setProjectId(currentProjectId);
+      const turn = await startReview(currentProjectId);
       setReviewId(turn.id);
       applyTurn(turn);
       setIsDemoResume(false);
     } catch (error) {
+      setPaymentRequired(error instanceof ApiError && error.status === 402);
       setReviewError(error instanceof Error ? error.message : "Sign in is required to start a review");
     } finally {
       setReviewBusy(false);
@@ -394,7 +410,11 @@ function App() {
           <DocumentTitle>{isDemoResume ? "Alex Morgan — Software Resume" : "Uploaded resume"}</DocumentTitle>
           <Discipline
             aria-label="Resume discipline"
-            onChange={(event) => setDiscipline(event.target.value as "software" | "mechanical")}
+            onChange={(event) => {
+              const next = event.target.value as DisciplineType;
+              setDiscipline(next);
+              if (projectId) void updateProject(projectId, { discipline: next });
+            }}
             value={discipline}
           >
             <option value="software">Software engineering</option>
@@ -549,6 +569,14 @@ function App() {
                       </EditCard>
                     ))}
                     {reviewError && <ErrorNotice role="alert">{reviewError}</ErrorNotice>}
+                    {paymentRequired && (
+                      <PaymentCard>
+                        <strong>Pay what you want, starting at $1</strong>
+                        <span>Use the same email as your Draftwise account. One payment unlocks one complete review.</span>
+                        <a href={import.meta.env.VITE_KOFI_PAYMENT_URL ?? "#"} rel="noreferrer" target="_blank">Continue to Ko-fi</a>
+                        <TextButton onClick={() => void beginReview()}>I’ve paid — check again</TextButton>
+                      </PaymentCard>
+                    )}
                     </>}
                   </ReviewBody>
                   <Composer>
@@ -1344,6 +1372,21 @@ const ErrorNotice = styled.p`
   background: ${colors.redPale};
   font-size: 11px;
   line-height: 1.45;
+`;
+
+const PaymentCard = styled.div`
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid ${colors.apricot};
+  border-radius: 9px;
+  background: ${colors.apricotPale};
+  font-size: 11px;
+  line-height: 1.45;
+
+  span { color: ${colors.inkMuted}; }
+  a { padding: 8px 10px; border-radius: 6px; color: white; background: ${colors.forest}; font-weight: 700; text-align: center; text-decoration: none; }
 `;
 
 const Composer = styled.div`
