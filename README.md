@@ -68,3 +68,5 @@ The E2E command starts the Vite dev server through Playwright. Install its Chrom
 Every AI-produced factual claim must trace to the original resume or an explicit user statement. If the evidence is missing, Draftwise asks; it does not guess.
 
 See [the implementation plan](./Technical%20Resume%20Reviewer_%20Final%20Product%20and%20Implementation%20Plan.md) and [architecture notes](./docs/architecture.md) for product and deployment details.
+
+Licensed under AGPL-3.0-or-later.
