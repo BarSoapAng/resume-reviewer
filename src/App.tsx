@@ -97,6 +97,7 @@ type LocalVersion = { id: string; source: string; reason: string; createdAt: str
 const initialIssues: DisplayIssue[] = demoIssues.map((issue) => ({
   ...issue,
   id: String(issue.id),
+  severity: issue.severity as DisplayIssue["severity"],
   status: "open",
 }));
 
@@ -117,6 +118,8 @@ function App() {
   const [source, setSource] = useState(
     () => window.localStorage.getItem("draftwise:resume-source") ?? initialLatex,
   );
+  const [showLanding, setShowLanding] = useState(() => !window.localStorage.getItem("draftwise:resume-source"));
+  const [landingSource, setLandingSource] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("review");
   const [reviewOpen, setReviewOpen] = useState(true);
   const [issues, setIssues] = useState<DisplayIssue[]>(initialIssues);
@@ -143,6 +146,7 @@ function App() {
     }
   });
   const fileInput = useRef<HTMLInputElement>(null);
+  const landingFileInput = useRef<HTMLInputElement>(null);
   const editor = useRef<ReactCodeMirrorRef>(null);
 
   const compile = useCallback(async (latex = source) => {
@@ -161,23 +165,26 @@ function App() {
   }, [source]);
 
   useEffect(() => {
+    if (showLanding) return;
     const saveTimer = window.setTimeout(() => {
       window.localStorage.setItem("draftwise:resume-source", source);
     }, 500);
 
     return () => window.clearTimeout(saveTimer);
-  }, [source]);
+  }, [showLanding, source]);
 
   useEffect(() => {
     window.localStorage.setItem("draftwise:resume-versions", JSON.stringify(versions.slice(0, 20)));
   }, [versions]);
 
   useEffect(() => {
+    if (showLanding) return;
     const compileTimer = window.setTimeout(() => void compile(source), 700);
     return () => window.clearTimeout(compileTimer);
-  }, [compile, source]);
+  }, [compile, showLanding, source]);
 
   useEffect(() => {
+    if (showLanding) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
         event.preventDefault();
@@ -186,7 +193,7 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [compile]);
+  }, [compile, showLanding]);
 
   useEffect(() => {
     if (!editor.current?.view) return;
@@ -218,6 +225,7 @@ function App() {
         setMessages([]);
         setEdits([]);
         setActiveTab("source");
+        setShowLanding(false);
       }
     };
     reader.readAsText(file);
@@ -330,6 +338,37 @@ function App() {
     selectTab(nextTab);
     document.getElementById(`workspace-tab-${nextTab}`)?.focus();
   };
+
+  if (showLanding) {
+    return (
+      <LandingShell>
+        <LandingNav>
+          <Brand><BrandMark><Icon name="sparkles" size={17} /></BrandMark><BrandName>draftwise</BrandName></Brand>
+          <LandingNote>Open source · No account needed to compile</LandingNote>
+        </LandingNav>
+        <LandingMain>
+          <LandingEyebrow>For software & mechanical engineering students</LandingEyebrow>
+          <LandingTitle>A technical resume reviewer that asks before it assumes.</LandingTitle>
+          <LandingCopy>Compile your existing one-file LaTeX resume, understand what is weak, and turn verified details into stronger bullets.</LandingCopy>
+          <ImportCard>
+            <ImportTabs>Paste LaTeX or upload a <code>.tex</code> file</ImportTabs>
+            <ImportTextarea aria-label="LaTeX resume source" onChange={(event) => setLandingSource(event.target.value)} placeholder="\\documentclass{article}\n..." value={landingSource} />
+            <ImportActions>
+              <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={15} /> Upload .tex</QuietButton>
+              <input ref={landingFileInput} accept=".tex,text/plain" hidden onChange={(event) => upload(event.target.files?.[0])} type="file" />
+              <PrimaryButton disabled={!landingSource.trim()} onClick={() => {
+                setSource(landingSource);
+                setIsDemoResume(false);
+                createCheckpoint("Initial paste", landingSource);
+                setShowLanding(false);
+              }}>Review my resume <Icon name="arrow" size={15} /></PrimaryButton>
+            </ImportActions>
+          </ImportCard>
+          <LandingPrivacy>Your source stays in this browser until you choose to sign in and start an AI review.</LandingPrivacy>
+        </LandingMain>
+      </LandingShell>
+    );
+  }
 
   return (
     <AppShell>
@@ -662,6 +701,110 @@ function App() {
 }
 
 export default App;
+
+const LandingShell = styled.main`
+  min-height: 100vh;
+  color: ${colors.ink};
+  background: radial-gradient(circle at 50% 20%, ${colors.forestPale}, ${colors.canvas} 42%);
+`;
+
+const LandingNav = styled.header`
+  display: flex;
+  height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid ${colors.border};
+  background: rgba(251, 251, 248, 0.85);
+`;
+
+const LandingNote = styled.span`
+  color: ${colors.inkMuted};
+  font-size: 11px;
+
+  @media (max-width: ${breakpoints.mobile}) { display: none; }
+`;
+
+const LandingMain = styled.section`
+  display: grid;
+  width: min(100% - 32px, 760px);
+  margin: 0 auto;
+  padding: 72px 0;
+  justify-items: center;
+  text-align: center;
+`;
+
+const LandingEyebrow = styled.div`
+  color: ${colors.forest};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+`;
+
+const LandingTitle = styled.h1`
+  max-width: 680px;
+  margin: 17px 0 13px;
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(36px, 6vw, 58px);
+  line-height: 1.04;
+  letter-spacing: -0.055em;
+`;
+
+const LandingCopy = styled.p`
+  max-width: 590px;
+  margin: 0;
+  color: ${colors.inkMuted};
+  font-size: 16px;
+  line-height: 1.6;
+`;
+
+const ImportCard = styled.div`
+  width: min(100%, 650px);
+  margin-top: 35px;
+  padding: 15px;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 14px;
+  background: ${colors.surfaceStrong};
+  box-shadow: ${shadows.soft};
+  text-align: left;
+`;
+
+const ImportTabs = styled.div`
+  padding: 2px 2px 11px;
+  color: ${colors.inkMuted};
+  font-size: 11px;
+  font-weight: 600;
+`;
+
+const ImportTextarea = styled.textarea`
+  width: 100%;
+  min-height: 190px;
+  padding: 13px;
+  resize: vertical;
+  border: 1px solid ${colors.border};
+  border-radius: 9px;
+  color: ${colors.code};
+  background: #fafaf7;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  line-height: 1.55;
+`;
+
+const ImportActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+`;
+
+const LandingPrivacy = styled.p`
+  max-width: 520px;
+  margin: 16px 0 0;
+  color: ${colors.inkMuted};
+  font-size: 10px;
+`;
 
 const AppShell = styled.main`
   display: grid;
