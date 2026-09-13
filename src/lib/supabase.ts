@@ -1,10 +1,10 @@
 import { createClient, type Provider, type Session } from "@supabase/supabase-js";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-export const supabase = url && anonKey
-  ? createClient(url, anonKey, { auth: { persistSession: true, detectSessionInUrl: true } })
+export const supabase = url && publishableKey
+  ? createClient(url, publishableKey, { auth: { persistSession: true, detectSessionInUrl: true } })
   : undefined;
 
 export async function getSession(): Promise<Session | null> {

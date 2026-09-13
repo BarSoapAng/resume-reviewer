@@ -14,7 +14,7 @@ const database = connectRepository(required("DATABASE_URL"));
 const reviewer = createAiReviewer(database.repository);
 const app = await createApp({
   repository: database.repository,
-  authenticator: createSupabaseAuthenticator(required("SUPABASE_URL"), required("SUPABASE_ANON_KEY")),
+  authenticator: createSupabaseAuthenticator(required("SUPABASE_URL"), required("SUPABASE_PUBLISHABLE_KEY")),
   compiler: createHttpCompiler(required("COMPILER_URL"), process.env.COMPILER_TOKEN),
   reviewer,
   kofiVerificationToken: required("KOFI_VERIFICATION_TOKEN"),

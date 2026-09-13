@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Authenticator } from "./ports.js";
 
-export function createSupabaseAuthenticator(url: string, anonKey: string): Authenticator {
-  const client = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+export function createSupabaseAuthenticator(url: string, publishableKey: string): Authenticator {
+  const client = createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
   return {
     async authenticate(token) {
       const { data, error } = await client.auth.getUser(token);

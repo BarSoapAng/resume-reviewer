@@ -1102,7 +1102,7 @@ auth.uid() = user_id
 
 where appropriate.
 
-The service-role key must never reach the browser.
+The secret key must never reach the browser. Browser clients use the publishable key.
 
 ---
 
