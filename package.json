@@ -15,6 +15,7 @@
     "@codemirror/legacy-modes": "^6.5.2",
     "@codemirror/lint": "^6.9.7",
     "@codemirror/search": "^6.7.2",
+    "@supabase/supabase-js": "^2.57.4",
     "@uiw/react-codemirror": "^4.25.4",
     "openai": "^6.49.0",
     "react": "^19.2.0",

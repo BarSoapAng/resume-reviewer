@@ -1,3 +1,5 @@
+import { getSession } from "./supabase";
+
 export type Discipline = "software" | "mechanical";
 export type ReviewState =
   | "imported"
@@ -61,9 +63,14 @@ export type CompileResult = {
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const session = await getSession();
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      "Content-Type": "application/json",
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      ...init?.headers,
+    },
   });
 
   if (!response.ok) {

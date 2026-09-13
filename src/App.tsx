@@ -22,6 +22,7 @@ import {
   type ReviewIssue,
   type ReviewState,
 } from "./lib/api";
+import { getSession, signIn, signOut, supabase } from "./lib/supabase";
 
 const initialLatex = `\\documentclass[10pt]{article}
 \\usepackage[margin=0.55in]{geometry}
@@ -138,6 +139,8 @@ function App() {
   const [diagnostics, setCompileDiagnostics] = useState<CompileDiagnostic[]>([]);
   const [pdfUrl, setPdfUrl] = useState<string>();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>();
   const [versions, setVersions] = useState<LocalVersion[]>(() => {
     try {
       return JSON.parse(window.localStorage.getItem("draftwise:resume-versions") ?? "[]") as LocalVersion[];
@@ -176,6 +179,12 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem("draftwise:resume-versions", JSON.stringify(versions.slice(0, 20)));
   }, [versions]);
+
+  useEffect(() => {
+    void getSession().then((session) => setUserEmail(session?.user.email));
+    const subscription = supabase?.auth.onAuthStateChange((_event, session) => setUserEmail(session?.user.email));
+    return () => subscription?.data.subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (showLanding) return;
@@ -258,6 +267,10 @@ function App() {
 
   const beginReview = async () => {
     if (reviewBusy) return;
+    if (!await getSession()) {
+      setAuthOpen(true);
+      return;
+    }
     setReviewOpen(true);
     setActiveTab("review");
     setReviewBusy(true);
@@ -407,7 +420,7 @@ function App() {
               </HistoryPopover>
             )}
           </HistoryWrap>
-          <Avatar>AM</Avatar>
+          <Avatar as="button" aria-label={userEmail ? `Sign out ${userEmail}` : "Sign in"} onClick={() => userEmail ? void signOut() : setAuthOpen(true)} title={userEmail ?? "Sign in"}>{userEmail ? userEmail.slice(0, 2).toUpperCase() : "?"}</Avatar>
         </HeaderActions>
       </Header>
 
@@ -696,6 +709,20 @@ function App() {
           </PrimaryButton>
         </FooterActions>
       </FooterBar>
+      {authOpen && (
+        <ModalBackdrop role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setAuthOpen(false); }}>
+          <AuthDialog aria-labelledby="auth-title" role="dialog" aria-modal="true">
+            <PanelEyebrow>Save and review</PanelEyebrow>
+            <PanelTitle id="auth-title">Sign in to start your AI review</PanelTitle>
+            <ReviewerCopy>Your current draft will stay here while you sign in. Hosted reviews require one review entitlement.</ReviewerCopy>
+            <AuthActions>
+              <AuthButton onClick={() => void signIn("google")}>Continue with Google</AuthButton>
+              <AuthButton onClick={() => void signIn("github")}>Continue with GitHub</AuthButton>
+            </AuthActions>
+            <TextButton onClick={() => setAuthOpen(false)}>Not now</TextButton>
+          </AuthDialog>
+        </ModalBackdrop>
+      )}
     </AppShell>
   );
 }
@@ -1679,6 +1706,44 @@ const PrimaryButton = styled.button`
 
   &:hover { background: ${colors.forestDark}; }
   &:disabled { cursor: not-allowed; opacity: 0.45; }
+`;
+
+const ModalBackdrop = styled.div`
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(24, 29, 24, 0.48);
+`;
+
+const AuthDialog = styled.section`
+  display: grid;
+  width: min(100%, 390px);
+  gap: 13px;
+  padding: 24px;
+  border-radius: 14px;
+  background: ${colors.surfaceStrong};
+  box-shadow: 0 24px 70px rgba(20, 24, 20, 0.25);
+`;
+
+const AuthActions = styled.div`
+  display: grid;
+  gap: 8px;
+  margin-top: 5px;
+`;
+
+const AuthButton = styled.button`
+  min-height: 40px;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 8px;
+  color: ${colors.ink};
+  background: ${colors.surfaceStrong};
+  font-size: 12px;
+  font-weight: 700;
+
+  &:hover { border-color: ${colors.forest}; background: ${colors.forestPale}; }
 `;
 
 const MobileTabs = styled.nav`
