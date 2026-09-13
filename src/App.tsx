@@ -529,6 +529,16 @@ function App() {
                   value={source}
                 />
               </EditorWrap>
+              {(diagnostics.length > 0 || compileError) && (
+                <DiagnosticsPanel aria-live="polite">
+                  {compileError && <DiagnosticRow $severity="error">{compileError}</DiagnosticRow>}
+                  {diagnostics.slice(0, 4).map((diagnostic, index) => (
+                    <DiagnosticRow key={`${diagnostic.line}-${diagnostic.message}-${index}`} $severity={diagnostic.severity}>
+                      {diagnostic.line ? `Line ${diagnostic.line}: ` : ""}{diagnostic.message}
+                    </DiagnosticRow>
+                  ))}
+                </DiagnosticsPanel>
+              )}
               <EditorStatus>
                 <span>Ln 14, Col 3</span>
                 <span>LaTeX</span>
@@ -1222,6 +1232,22 @@ const EditorStatus = styled.div`
   background: ${colors.surfaceStrong};
   font-family: "DM Mono", monospace;
   font-size: 9px;
+`;
+
+const DiagnosticsPanel = styled.div`
+  max-height: 112px;
+  padding: 8px 12px;
+  overflow: auto;
+  border-top: 1px solid ${colors.border};
+  background: ${colors.surfaceStrong};
+`;
+
+const DiagnosticRow = styled.div<{ $severity: "error" | "warning" }>`
+  padding: 3px 0;
+  color: ${({ $severity }) => ($severity === "error" ? colors.red : colors.inkMuted)};
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  line-height: 1.4;
 `;
 
 const PreviewCanvas = styled.div`
