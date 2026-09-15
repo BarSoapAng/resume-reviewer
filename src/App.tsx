@@ -24,7 +24,7 @@ import {
   type ReviewState,
   ApiError,
 } from "./lib/api";
-import { getSession, signIn, signOut, supabase } from "./lib/supabase";
+import { getSession, signIn, signInWithEmail, signOut, supabase } from "./lib/supabase";
 
 const initialLatex = `\\documentclass[10pt]{article}
 \\usepackage[margin=0.55in]{geometry}
@@ -56,6 +56,8 @@ const initialLatex = `\\documentclass[10pt]{article}
 
 type Tab = "review" | "source" | "preview";
 const tabs: Tab[] = ["review", "source", "preview"];
+const googleOAuthEnabled = import.meta.env.VITE_ENABLE_GOOGLE_OAUTH === "true";
+const githubOAuthEnabled = import.meta.env.VITE_ENABLE_GITHUB_OAUTH === "true";
 
 const demoIssues = [
   {
@@ -144,6 +146,8 @@ function App() {
   const [pdfUrl, setPdfUrl] = useState<string>();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authMessage, setAuthMessage] = useState<string>();
   const [userEmail, setUserEmail] = useState<string>();
   const [versions, setVersions] = useState<LocalVersion[]>(() => {
     try {
@@ -744,8 +748,20 @@ function App() {
             <PanelTitle id="auth-title">Sign in to start your AI review</PanelTitle>
             <ReviewerCopy>Your current draft will stay here while you sign in. Hosted reviews require one review entitlement.</ReviewerCopy>
             <AuthActions>
-              <AuthButton onClick={() => void signIn("google")}>Continue with Google</AuthButton>
-              <AuthButton onClick={() => void signIn("github")}>Continue with GitHub</AuthButton>
+              <AuthEmailInput aria-label="Email address" autoComplete="email" onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" type="email" value={authEmail} />
+              <AuthButton disabled={!authEmail.trim()} onClick={async () => {
+                setAuthMessage(undefined);
+                try {
+                  await signInWithEmail(authEmail.trim());
+                  setAuthMessage("Check your email for a secure sign-in link.");
+                } catch (error) {
+                  setAuthMessage(error instanceof Error ? error.message : "Could not send the sign-in link.");
+                }
+              }}>Email me a sign-in link</AuthButton>
+              {authMessage && <AuthMessage role="status">{authMessage}</AuthMessage>}
+              {(googleOAuthEnabled || githubOAuthEnabled) && <AuthDivider>or</AuthDivider>}
+              {googleOAuthEnabled && <AuthButton onClick={() => void signIn("google")}>Continue with Google</AuthButton>}
+              {githubOAuthEnabled && <AuthButton onClick={() => void signIn("github")}>Continue with GitHub</AuthButton>}
             </AuthActions>
             <TextButton onClick={() => setAuthOpen(false)}>Not now</TextButton>
           </AuthDialog>
@@ -1775,6 +1791,34 @@ const AuthActions = styled.div`
   display: grid;
   gap: 8px;
   margin-top: 5px;
+`;
+
+const AuthEmailInput = styled.input`
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 8px;
+  color: ${colors.ink};
+  background: ${colors.surfaceStrong};
+  font-size: 12px;
+`;
+
+const AuthMessage = styled.p`
+  margin: 0;
+  color: ${colors.forest};
+  font-size: 11px;
+  line-height: 1.4;
+`;
+
+const AuthDivider = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: ${colors.inkMuted};
+  font-size: 9px;
+  text-transform: uppercase;
+
+  &::before, &::after { height: 1px; flex: 1; background: ${colors.border}; content: ""; }
 `;
 
 const AuthButton = styled.button`

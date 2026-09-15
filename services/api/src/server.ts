@@ -12,13 +12,15 @@ function required(name: string) {
 
 const database = connectRepository(required("DATABASE_URL"));
 const reviewer = createAiReviewer(database.repository);
+const requireReviewEntitlement = process.env.REQUIRE_REVIEW_ENTITLEMENT !== "false";
 const app = await createApp({
   repository: database.repository,
   authenticator: createSupabaseAuthenticator(required("SUPABASE_URL"), required("SUPABASE_PUBLISHABLE_KEY")),
   compiler: createHttpCompiler(required("COMPILER_URL"), process.env.COMPILER_TOKEN),
   reviewer,
-  kofiVerificationToken: required("KOFI_VERIFICATION_TOKEN"),
+  kofiVerificationToken: requireReviewEntitlement ? required("KOFI_VERIFICATION_TOKEN") : process.env.KOFI_VERIFICATION_TOKEN ?? "disabled",
   corsOrigin: process.env.WEB_ORIGIN,
+  requireReviewEntitlement,
 });
 
 const close = async () => { await app.close(); await database.close(); };

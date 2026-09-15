@@ -39,13 +39,14 @@ function repository(overrides: Partial<Repository> = {}): Repository {
   } as Repository;
 }
 
-async function app(repo = repository()) {
+async function app(repo = repository(), requireReviewEntitlement?: boolean) {
   return createApp({
     repository: repo,
     authenticator: { authenticate: vi.fn(async (token) => token === "valid" ? user : null) },
     compiler: { compile: vi.fn(async () => ({ ok: true, pdfBase64: "cGRm", diagnostics: [], cached: false })) },
     reviewer: { runTurn: vi.fn(async () => ({ state: "probing" as const, message: "Review", issues: [], questions: [], edits: [] })) },
     kofiVerificationToken: "secret",
+    requireReviewEntitlement,
   });
 }
 
@@ -89,6 +90,18 @@ describe("API", () => {
     const response = await instance.inject({ method: "POST", url: `/api/projects/${project.id}/reviews`, headers: { authorization: "Bearer valid" }, payload: {} });
     expect(response.statusCode).toBe(201);
     expect(response.json()).toEqual({ id: session.id, state: "probing", message: "Review", issues: [], questions: [], edits: [] });
+    await instance.close();
+  });
+
+  it("allows self-hosted reviews without a payment entitlement when configured", async () => {
+    const session = { id: "00000000-0000-4000-8000-000000000004", projectId: project.id, rubricVersion: "v1", state: "initial_review" as const, model: "configured", startedAt: new Date(), completedAt: null };
+    const createReview = vi.fn(async () => session);
+    const createEntitledReview = vi.fn();
+    const instance = await app(repository({ createReview, createEntitledReview }), false);
+    const response = await instance.inject({ method: "POST", url: `/api/projects/${project.id}/reviews`, headers: { authorization: "Bearer valid" }, payload: {} });
+    expect(response.statusCode).toBe(201);
+    expect(createReview).toHaveBeenCalledWith(project.id, user.userId, "v1", "configured");
+    expect(createEntitledReview).not.toHaveBeenCalled();
     await instance.close();
   });
 

@@ -5,7 +5,7 @@ Draftwise is an open-source technical resume reviewer for software and mechanica
 ## What is implemented
 
 - Responsive React workspace with CodeMirror, resizable panes, mobile tabs, local autosave, `.tex` import/export, checkpoints, source-linked issues, edit decisions, compiler diagnostics, and PDF preview/download
-- Supabase Google/GitHub OAuth session handling
+- Supabase email magic-link and Google/GitHub OAuth session handling
 - Node/Fastify application API with authenticated project, review, message, edit, restore, entitlement, and Ko-fi webhook routes
 - PostgreSQL/Drizzle schema plus Supabase row-level-security migration
 - Structured OpenAI Responses reviewer with `store: false`, a deterministic state machine, fact grounding, stale-anchor protection, and version-controlled rubrics
@@ -29,7 +29,16 @@ docs/                 architecture and privacy notes
 
 ## Local setup
 
-Copy `.env.example` to `.env` and configure Supabase, OpenAI, Ko-fi, and service URLs. Then install each package:
+Copy `.env.example` to `.env` and configure Supabase, OpenAI, Ko-fi, and service URLs. `DATABASE_URL` must be a connection string for this Supabase project; do not leave the placeholder pointed at an unrelated local PostgreSQL server.
+
+Apply the migrations in filename order using the Supabase SQL Editor:
+
+```text
+supabase/migrations/202609130001_initial_schema.sql
+supabase/migrations/202609130002_persist_review_turns.sql
+```
+
+Then install each package:
 
 ```bash
 npm install
@@ -37,13 +46,15 @@ npm --prefix services/api install
 npm --prefix services/compiler install
 ```
 
-Run the isolated compiler, application API, and browser in separate terminals:
+Run the isolated compiler, application API, and browser in separate terminals. The API scripts load the root `.env` automatically:
 
 ```bash
-npm --prefix services/compiler run dev
+docker compose -f docker-compose.compiler.yml up --build
 npm --prefix services/api run dev
 npm run dev
 ```
+
+Email magic-link authentication works without an external OAuth provider. Google and GitHub buttons require enabling those providers in the Supabase dashboard first.
 
 For production, use the hardened compiler container described in [services/compiler/README.md](./services/compiler/README.md). Do not run untrusted LaTeX in the API process.
 

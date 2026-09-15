@@ -9,8 +9,22 @@ export function createHttpCompiler(baseUrl: string, token?: string): Compiler {
         body: JSON.stringify({ source }),
         signal: AbortSignal.timeout(30_000),
       });
-      if (!response.ok) throw new Error(`Compiler returned ${response.status}`);
-      return await response.json();
+      if (!response.ok && response.status !== 422) throw new Error(`Compiler returned ${response.status}`);
+      const result = await response.json() as {
+        success?: boolean;
+        ok?: boolean;
+        pdfUrl?: string;
+        pdfBase64?: string;
+        cached?: boolean;
+        diagnostics?: Array<{ message: string; line?: number; column?: number; severity?: "error" | "warning" }>;
+      };
+      return {
+        ok: result.ok ?? result.success ?? false,
+        pdfUrl: result.pdfUrl,
+        pdfBase64: result.pdfBase64,
+        cached: result.cached,
+        diagnostics: result.diagnostics ?? [],
+      };
     },
   };
 }

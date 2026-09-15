@@ -29,6 +29,7 @@ export interface AppDependencies {
   reviewer: ReviewEngine;
   kofiVerificationToken: string;
   corsOrigin?: string;
+  requireReviewEntitlement?: boolean;
 }
 
 async function principal(request: FastifyRequest, authenticator: Authenticator): Promise<Principal> {
@@ -102,7 +103,9 @@ export async function createApp(deps: AppDependencies) {
     const user = await principal(request, deps.authenticator);
     const { id } = IdParams.parse(request.params);
     const input = ReviewInput.parse(request.body ?? {});
-    const value = await deps.repository.createEntitledReview(id, user.userId, input.rubricVersion, input.model);
+    const value = deps.requireReviewEntitlement === false
+      ? await deps.repository.createReview(id, user.userId, input.rubricVersion, input.model)
+      : await deps.repository.createEntitledReview(id, user.userId, input.rubricVersion, input.model);
     if (!value) throw new HttpError(404, "Project not found");
     if (value === "payment_required") throw new HttpError(402, "A review entitlement is required");
     const turn = await deps.reviewer.runTurn({ session: value, content: "", userId: user.userId });
