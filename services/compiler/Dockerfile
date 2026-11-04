@@ -13,7 +13,12 @@ FROM debian:bookworm-slim AS tectonic
 
 ARG TECTONIC_VERSION=0.15.0
 ARG TARGETARCH
-RUN apt-get update \
+RUN printf '%s\n' \
+      'Acquire::ForceIPv4 "true";' \
+      'Acquire::http::Timeout "20";' \
+      'Acquire::https::Timeout "20";' \
+      'Acquire::Retries "2";' > /etc/apt/apt.conf.d/99network \
+    && apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
     && case "$TARGETARCH" in \
          amd64) TECTONIC_ARCH=x86_64; TECTONIC_SHA256=dfb82876f2986862996e564fa507a9e576e0c1e3bee63c2c1bd677c2543e6407 ;; \
