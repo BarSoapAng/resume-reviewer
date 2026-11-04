@@ -14,13 +14,13 @@ test("imports, edits, checkpoints, and downloads a LaTeX resume", async ({ page 
   await page.getByRole("button", { name: /review my resume/i }).click();
 
   await page.getByTitle("Rename document").click();
-  await page.getByRole("textbox", { name: "Document filename" }).fill("Angela Resume Updated.tex");
+  await page.getByRole("textbox", { name: "Document filename" }).fill("Angela Resume Updated");
   await page.getByRole("textbox", { name: "Document filename" }).press("Enter");
   await expect(page.getByRole("button", { name: "Angela Resume Updated.tex" })).toBeVisible();
   await page.getByRole("button", { name: "Version history" }).click();
   await expect(page.getByText("Initial paste")).toBeVisible();
 
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.keyboard.press("Escape");
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download .tex source" }).click();
   await expect((await download).suggestedFilename()).toBe("Angela Resume Updated.tex");
@@ -60,7 +60,7 @@ test("keeps upload names and derives PDF downloads from the edited title", async
   });
   await expect(page.getByRole("button", { name: "Angela Resume.tex", exact: true })).toBeVisible();
   await page.getByTitle("Rename document").click();
-  await page.getByRole("textbox", { name: "Document filename" }).fill("Angela Resume Updated.tex");
+  await page.getByRole("textbox", { name: "Document filename" }).fill("Angela Resume Updated");
   await page.getByRole("textbox", { name: "Document filename" }).press("Enter");
   await expect(page.getByRole("button", { name: "Download PDF", exact: true })).toBeEnabled();
   const download = page.waitForEvent("download");

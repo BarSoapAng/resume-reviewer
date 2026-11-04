@@ -12,7 +12,7 @@ import CodeMirror from "@uiw/react-codemirror";
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
 import { searchKeymap } from "@codemirror/search";
-import { keymap } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
 
 export function SourcePanel({ model }: {
   model: Pick<WorkspaceModel,
@@ -61,6 +61,7 @@ export function SourcePanel({ model }: {
           }}
           extensions={[
             StreamLanguage.define(stex),
+            EditorView.lineWrapping,
             keymap.of(searchKeymap),
           ]}
           height="100%"
@@ -99,7 +100,7 @@ const EditorWrap = styled.div`
   background: ${colors.paper[100]};
 
   .cm-theme, .cm-editor { height: 100%; }
-  .cm-scroller { overflow: auto; font-family: ${fonts.mono}; }
+  .cm-scroller { overflow-y: auto; overflow-x: hidden; font-family: ${fonts.mono}; }
   .cm-content, .cm-gutter { font-size: ${fontSize.xs}; line-height: 1.75; }
   .cm-gutters { border-right: ${spacing.hairline} solid ${colors.paper[300]}; color: ${colors.paper[500]}; background: ${colors.paper[200]}; }
   .cm-activeLine, .cm-activeLineGutter { background: ${colors.forest[100]}; }

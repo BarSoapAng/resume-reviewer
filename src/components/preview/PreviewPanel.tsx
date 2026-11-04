@@ -29,7 +29,7 @@ export function PreviewPanel({ model }: {
         <ToolTitle>Preview</ToolTitle>
         <ToolActions>
           <CompileButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
-            {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing.lg} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
+            {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing.md} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
           </CompileButton>
           <IconButton aria-label="Download PDF" disabled={!pdfUrl} onClick={() => void downloadPdf()} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={spacing.md} /></IconButton>
         </ToolActions>
@@ -41,7 +41,7 @@ export function PreviewPanel({ model }: {
           <PreviewUnavailable>
             <PreviewUnavailableIcon><Icon name="code" size={spacing.lg} /></PreviewUnavailableIcon>
             <Strong>{compileState === "compiling" ? "Compiling resume" : "Preview unavailable"}</Strong>
-            <Text>{compileState === "compiling" ? "Your preview will appear here when it is ready." : "Compile your resume to see a preview. If compilation fails, check the source diagnostics and try again."}</Text>
+            <Text>{compileState === "error" ? "Something went wrong. Try again." : compileState === "compiling" ? "Your preview will appear here when it is ready." : "Compile your resume to see a preview."}</Text>
           </PreviewUnavailable>
         ) : (
           <Paper>
