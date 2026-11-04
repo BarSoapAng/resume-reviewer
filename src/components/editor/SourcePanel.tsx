@@ -99,8 +99,8 @@ const EditorWrap = styled.div`
   overflow: hidden;
   background: ${colors.paper[100]};
 
-  .cm-theme, .cm-editor { height: 100%; }
-  .cm-scroller { overflow-y: auto; overflow-x: hidden; font-family: ${fonts.mono}; }
+  > div, .cm-editor { height: 100%; min-height: 0; }
+  .cm-scroller { min-height: 0; overflow-y: auto; overflow-x: hidden; font-family: ${fonts.mono}; }
   .cm-content, .cm-gutter { font-size: ${fontSize.xs}; line-height: 1.75; }
   .cm-gutters { border-right: ${spacing.hairline} solid ${colors.paper[300]}; color: ${colors.paper[500]}; background: ${colors.paper[200]}; }
   .cm-activeLine, .cm-activeLineGutter { background: ${colors.forest[100]}; }

@@ -34,11 +34,27 @@ test("switches the workspace panes on a narrow screen", async ({ page }) => {
   await expect(page.getByRole("tabpanel", { name: "Preview" })).toBeVisible();
 });
 
+for (const width of [1280, 390]) {
+  test(`scrolls long Source content inside its panel at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.addInitScript(() => localStorage.setItem("aria:resume-source", Array.from({ length: 300 }, (_, index) => `% Resume line ${index}`).join("\n")));
+    await page.goto("/");
+    if (width === 390) await page.getByRole("button", { name: "Source", exact: true }).click();
+    const scroller = page.locator("#workspace-panel-source .cm-scroller");
+    await expect(scroller).toBeVisible();
+    await expect.poll(() => scroller.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+    await scroller.hover();
+    await page.mouse.wheel(0, 500);
+    await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(() => scroller.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+  });
+}
+
 
 test("can hide every panel and restore it from the permanent sidebar", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("aria:resume-source", "\\documentclass{article}\\begin{document}Hi\\end{document}"));
   await page.goto("/");
-  for (const name of ["Ario", "Source", "Preview"]) {
+  for (const name of ["Aria", "Source", "Preview"]) {
     await page.getByRole("button", { name, exact: true }).click();
   }
   await expect(page.getByRole("navigation", { name: "Workspace panels" })).toBeVisible();
