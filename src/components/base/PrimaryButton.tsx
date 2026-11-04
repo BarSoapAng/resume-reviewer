@@ -15,6 +15,6 @@ export const PrimaryButton = styled(Button)`
   font-size: ${fontSize.xs};
   font-weight: 700;
 
-  &:hover { background: ${colors.forest[800]}; }
+  &:hover:not(:disabled) { background: ${colors.forest[800]}; }
   &:disabled { cursor: not-allowed; opacity: 0.45; }
 `;

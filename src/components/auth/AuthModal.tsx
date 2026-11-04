@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { colors, fontSize, spacing, radius, alpha, Body } from "../../lib/style";
 import { Input } from "../base/Input";
 import { Button } from "../base/Button";
+import { PrimaryButton } from "../base/PrimaryButton";
+import { QuietButton } from "../base/QuietButton";
 import { Form } from "../base/Form";
 import styled from "styled-components";
 import { PanelTitle } from "../typography/PanelTitle";
@@ -50,11 +52,11 @@ export function AuthModal({ model }: { model: Pick<WorkspaceModel,
       <AuthDialog ref={dialog} tabIndex={-1} aria-labelledby="auth-title" role="dialog" aria-modal="true">
         <PanelTitle id="auth-title">Sign in</PanelTitle>
         {googleOAuthEnabled && <GoogleButton type="button" onClick={() => void oauth("google")} aria-label="Sign in with Google"><img src="https://developers.google.com/static/identity/gsi/web/images/standard-button-white.png" alt="Sign in with Google" /></GoogleButton>}
-        {githubOAuthEnabled && <AuthButton type="button" onClick={() => void oauth("github")}>Continue with GitHub</AuthButton>}
+        {githubOAuthEnabled && <QuietButton type="button" onClick={() => void oauth("github")}>Continue with GitHub</QuietButton>}
         {(googleOAuthEnabled || githubOAuthEnabled) && <AuthDivider>or</AuthDivider>}
         <AuthActions onSubmit={(event) => { event.preventDefault(); if (authEmail.trim()) void emailSignIn(); }}>
           <AuthEmailInput aria-label="Email address" autoComplete="email" onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" type="email" value={authEmail} required />
-          <AuthButton disabled={!authEmail.trim()} type="submit">Email me a sign-in link</AuthButton>
+          <PrimaryButton disabled={!authEmail.trim()} type="submit">Email me a sign-in link</PrimaryButton>
           {authMessage && <AuthMessage role="status">{authMessage === "Check your email for a secure sign-in link." ? authMessage : "We couldn’t send a sign-in link. Please try again."}</AuthMessage>}
         </AuthActions>
         {providerError && <AuthMessage role="alert">We couldn’t open sign-in. Please try again.</AuthMessage>}
@@ -65,11 +67,10 @@ export function AuthModal({ model }: { model: Pick<WorkspaceModel,
 }
 
 const ModalBackdrop = styled.div`position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: ${spacing.md}; background: ${alpha(colors.paper[900], 0.48)};`;
-const AuthDialog = styled.section`display: grid; width: min(100%, ${spacing["10xl"]}); max-height: calc(100dvh - 32px); overflow-y: auto; gap: ${spacing.sm}; padding: ${spacing.lg}; border-radius: ${radius.lg}; background: ${colors.paper[0]}; box-shadow: 0 ${spacing.lg} ${spacing["4xl"]} ${alpha(colors.paper[900], 0.25)};`;
+const AuthDialog = styled.section`display: grid; width: min(100%, ${spacing["10xl"]}); max-height: calc(100dvh - 32px); overflow-y: auto; gap: ${spacing.sm}; padding: ${spacing.lg}; border-radius: ${radius.lg}; background: ${colors.paper[0]}; box-shadow: 0 ${spacing.lg} ${spacing["4xl"]} ${alpha(colors.paper[900], 0.25)}; text-align: center; button { justify-content: center; } > ${TextButton} { justify-self: center; }`;
 const AuthActions = styled(Form)`display: grid; gap: ${spacing.xs};`;
 const AuthMessage = styled(Body)`margin: 0; font-size: ${fontSize.xs}; line-height: 1.4; overflow-wrap: anywhere;`;
 const AuthDivider = styled.div`display: flex; align-items: center; gap: ${spacing.xs}; color: ${colors.paper[600]}; font-size: ${fontSize.xxs}; &::before, &::after { height: 1px; flex: 1; background: ${colors.paper[300]}; content: ""; }`;
-const AuthButton = styled(Button)`min-height: ${spacing.xxl}; border: 1px solid ${colors.paper[400]}; border-radius: ${radius.sm}; color: ${colors.paper[900]}; background: ${colors.paper[0]}; font-size: ${fontSize.xs}; font-weight: 700; &:hover { border-color: ${colors.forest[600]}; background: ${colors.forest[100]}; }`;
 // Official pre-approved artwork; preserve the supplied aspect ratio and Supabase OAuth.
-const GoogleButton = styled(Button)`display: flex; width: fit-content; max-width: 100%; padding: 0; border: 0; background: white; border-radius: 4px; img { display: block; height: 40px; width: auto; max-width: 100%; object-fit: contain; } &:focus-visible { outline: 2px solid ${colors.forest[600]}; outline-offset: 2px; }`;
-const AuthEmailInput = styled(Input)`min-width: 0; width: 100%; min-height: ${spacing.xxl}; padding: 0 ${spacing.sm}; border: 1px solid ${colors.paper[400]}; border-radius: ${radius.sm}; color: ${colors.paper[900]}; background: ${colors.paper[0]}; font-size: ${fontSize.xs};`;
+const GoogleButton = styled(Button)`display: flex; width: 100%; padding: 0; border: 0; background: white; border-radius: 4px; img { display: block; width: 100%; height: auto; } &:focus-visible { outline: 2px solid ${colors.forest[600]}; outline-offset: 2px; }`;
+const AuthEmailInput = styled(Input)`min-width: 0; width: 100%; min-height: ${spacing.xxl}; padding: 0 ${spacing.sm}; border: 1px solid ${colors.paper[400]}; border-radius: ${radius.sm}; color: ${colors.paper[900]}; background: ${colors.paper[0]}; font-size: ${fontSize.xs}; text-align: center;`;
