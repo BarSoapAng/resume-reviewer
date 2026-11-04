@@ -25,7 +25,7 @@ import {
   type ReviewState,
   ApiError,
 } from "./lib/api";
-import { getSession, signIn, signInWithEmail, signOut, supabase } from "./lib/supabase";
+import { getSession, signIn, signInWithEmail, signOut, watchSession } from "./lib/supabase";
 
 const initialLatex = `\\documentclass[10pt]{article}
 \\usepackage[margin=0.55in]{geometry}
@@ -199,9 +199,10 @@ function App() {
   }, [projectId, source]);
 
   useEffect(() => {
-    void getSession().then((session) => setUserEmail(session?.user.email));
-    const subscription = supabase?.auth.onAuthStateChange((_event, session) => setUserEmail(session?.user.email));
-    return () => subscription?.data.subscription.unsubscribe();
+    return watchSession((session) => {
+      setUserEmail(session?.user.email);
+      if (session) setAuthOpen(false);
+    });
   }, []);
 
   useEffect(() => {
