@@ -1,8 +1,7 @@
 import styled from "styled-components";
-import { colors, breakpoints, typography } from "../lib/style";
+import { colors, breakpoints, typography } from "../../lib/style";
 
-export { PanelFrame };
-const PanelFrame = styled.section<{ $mobileActive: boolean }>`
+export const PanelFrame = styled.section<{ $mobileActive: boolean; }>`
   ${typography.body}
   display: flex;
   height: 100%;

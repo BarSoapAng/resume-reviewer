@@ -1,8 +1,7 @@
 import styled from "styled-components";
-import { Text, colors, textSize, typography } from "../lib/style";
+import { Text, colors, textSize, typography } from "../../lib/style";
 
-export { PanelEyebrow };
-const PanelEyebrow = styled(Text).attrs({ as: "span" })`
+export const PanelEyebrow = styled(Text).attrs({ as: "span" })`
   ${typography.body}
   color: ${colors.forest};
   font-size: ${textSize.s10};

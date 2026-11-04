@@ -68,6 +68,7 @@ export const textSize = {
 };
 
 export const typography = {
+  resume: css`font-family: ${fonts.resume}; line-height: 1.55;`,
   body: css`font-family: ${fonts.body}; font-size: 14px; line-height: 1.55;`,
   header: css`font-family: ${fonts.heading}; font-size: 36px; font-weight: 700; line-height: 1.1;`,
   header2: css`font-family: ${fonts.heading}; font-size: 20px; font-weight: 700; line-height: 1.2;`,

@@ -1,17 +1,25 @@
+import { Button } from "../components/base/Button";
 import styled from "styled-components";
 import { colors, breakpoints, textSize, typography } from "../lib/style";
 import { PanelResizeHandle } from "react-resizable-panels";
 import type { WorkspaceModel } from "../hooks/useResumeWorkspace";
 import { Panel, PanelGroup } from "react-resizable-panels";
-import { WorkspaceHeader } from "../components/WorkspaceHeader";
-import { ReviewPanel } from "../components/ReviewPanel";
-import { SourcePanel } from "../components/SourcePanel";
-import { PreviewPanel } from "../components/PreviewPanel";
-import { WorkspaceFooter } from "../components/WorkspaceFooter";
-import { AuthModal } from "../components/AuthModal";
+import { WorkspaceHeader } from "../components/workspace/WorkspaceHeader";
+import { ReviewPanel } from "../components/review/ReviewPanel";
+import { SourcePanel } from "../components/editor/SourcePanel";
+import { PreviewPanel } from "../components/preview/PreviewPanel";
+import { WorkspaceFooter } from "../components/workspace/WorkspaceFooter";
+import { AuthModal } from "../components/auth/AuthModal";
 
-export function WorkspaceView({ model }: { model: WorkspaceModel }) {
-  const { activeTab, moveTabFocus, reviewOpen, selectTab, tabs, unresolvedCount } = model;
+export function WorkspaceView({ model }: { model: WorkspaceModel; }) {
+  const {
+    activeTab,
+    moveTabFocus,
+    reviewOpen,
+    selectTab,
+    tabs,
+    unresolvedCount,
+  } = model;
   return (
     <AppShell>
       <WorkspaceHeader model={model} />
@@ -42,19 +50,19 @@ export function WorkspaceView({ model }: { model: WorkspaceModel }) {
           {reviewOpen && (
             <>
               <Panel className={activeTab === "review" ? "" : "mobile-hidden"} defaultSize={27} minSize={22} order={1}>
-      <ReviewPanel model={model} />
+                <ReviewPanel model={model} />
               </Panel>
               <ResizeHandle />
             </>
           )}
 
           <Panel className={activeTab === "source" ? "" : "mobile-hidden"} defaultSize={reviewOpen ? 37 : 48} minSize={28} order={2}>
-      <SourcePanel model={model} />
+            <SourcePanel model={model} />
           </Panel>
 
           <ResizeHandle />
           <Panel className={activeTab === "preview" ? "" : "mobile-hidden"} defaultSize={36} minSize={28} order={3}>
-      <PreviewPanel model={model} />
+            <PreviewPanel model={model} />
           </Panel>
         </PanelGroup>
       </Workspace>
@@ -124,7 +132,7 @@ const MobileTabs = styled.nav`
   }
 `;
 
-const MobileTab = styled.button<{ $active: boolean }>`
+const MobileTab = styled(Button) <{ $active: boolean; }>`
   ${typography.body}
   position: relative;
   border: 0;

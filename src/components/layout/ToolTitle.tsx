@@ -1,8 +1,7 @@
 import styled from "styled-components";
-import { textSize, typography } from "../lib/style";
+import { Label, textSize, typography } from "../../lib/style";
 
-export { ToolTitle };
-const ToolTitle = styled.div`
+export const ToolTitle = styled(Label).attrs({ as: "div" })`
   ${typography.body}
   display: flex;
   align-items: center;

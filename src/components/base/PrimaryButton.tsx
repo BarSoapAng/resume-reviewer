@@ -2,8 +2,7 @@ import styled from "styled-components";
 import { colors, textSize, typography } from "../../lib/style";
 import { Button } from "./Button";
 
-export { PrimaryButton };
-const PrimaryButton = styled(Button)`
+export const PrimaryButton = styled(Button)`
   ${typography.body}
   display: inline-flex;
   height: 34px;

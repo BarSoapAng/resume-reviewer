@@ -1,44 +1,55 @@
+import { Textarea } from "../components/base/Textarea";
+import { Card } from "../components/base/Card";
 import styled from "styled-components";
-import { Body, Code, Header, Text, breakpoints, colors, fonts, textSize, typography } from "../lib/style";
-import { BrandName } from "../components/BrandName";
-import { ImportCard } from "../components/base/ImportCard";
-import { ImportTextarea } from "../components/base/ImportTextarea";
-import { Brand } from "../components/Brand";
-import { BrandMark } from "../components/BrandMark";
+import { Body, Code, Header, Label, Text, breakpoints, colors, fonts, shadows, textSize, typography } from "../lib/style";
+import { Brand } from "../components/brand/Brand";
 import { QuietButton } from "../components/base/QuietButton";
 import { PrimaryButton } from "../components/base/PrimaryButton";
 import type { WorkspaceModel } from "../hooks/useResumeWorkspace";
-import { Icon } from "../components/Icon";
+import { Icon } from "../components/base/Icon";
 
-export function LandingView({ model }: { model: WorkspaceModel }) {
-  const { createCheckpoint, landingFileInput, landingSource, setIsDemoResume, setLandingSource, setShowLanding, setSource, upload } = model;
+export function LandingView({ model }: {
+  model: Pick<WorkspaceModel,
+    "createCheckpoint" | "landingFileInput" | "landingSource" | "setIsDemoResume" | "setLandingSource" | "setShowLanding" | "setSource" | "upload"
+  >;
+}) {
+  const {
+    createCheckpoint,
+    landingFileInput,
+    landingSource,
+    setIsDemoResume,
+    setLandingSource,
+    setShowLanding,
+    setSource,
+    upload,
+  } = model;
   return (
-      <LandingShell>
-        <LandingNav>
-          <Brand><BrandMark><Icon name="sparkles" size={17} /></BrandMark><BrandName>Aria</BrandName></Brand>
-          <LandingNote>Open source · No account needed to compile</LandingNote>
-        </LandingNav>
-        <LandingMain>
-          <LandingEyebrow>For software & mechanical engineering students</LandingEyebrow>
-          <LandingTitle>A technical resume reviewer that asks before it assumes.</LandingTitle>
-          <LandingCopy>Compile your existing one-file LaTeX resume, understand what is weak, and turn verified details into stronger bullets.</LandingCopy>
-          <ImportCard>
-            <ImportTabs>Paste LaTeX or upload a <Code>.tex</Code> file</ImportTabs>
-            <ImportTextarea aria-label="LaTeX resume source" onChange={(event) => setLandingSource(event.target.value)} placeholder="\\documentclass{article}\n..." value={landingSource} />
-            <ImportActions>
-              <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={15} /> Upload .tex</QuietButton>
-              <input ref={landingFileInput} accept=".tex,text/plain" hidden onChange={(event) => upload(event.target.files?.[0])} type="file" />
-              <PrimaryButton disabled={!landingSource.trim()} onClick={() => {
-                setSource(landingSource);
-                setIsDemoResume(false);
-                createCheckpoint("Initial paste", landingSource);
-                setShowLanding(false);
-              }}>Review my resume <Icon name="arrow" size={15} /></PrimaryButton>
-            </ImportActions>
-          </ImportCard>
-          <LandingPrivacy>Your source stays in this browser until you choose to sign in and start an AI review.</LandingPrivacy>
-        </LandingMain>
-      </LandingShell>
+    <LandingShell>
+      <LandingNav>
+        <Brand />
+        <LandingNote>Open source · No account needed to compile</LandingNote>
+      </LandingNav>
+      <LandingMain>
+        <LandingEyebrow>For software & mechanical engineering students</LandingEyebrow>
+        <LandingTitle>A technical resume reviewer that asks before it assumes.</LandingTitle>
+        <LandingCopy>Compile your existing one-file LaTeX resume, understand what is weak, and turn verified details into stronger bullets.</LandingCopy>
+        <ImportCard>
+          <ImportTabs>Paste LaTeX or upload a <Code>.tex</Code> file</ImportTabs>
+          <ImportTextarea aria-label="LaTeX resume source" onChange={(event) => setLandingSource(event.target.value)} placeholder="\\documentclass{article}\n..." value={landingSource} />
+          <ImportActions>
+            <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={15} /> Upload .tex</QuietButton>
+            <input ref={landingFileInput} accept=".tex,text/plain" hidden onChange={(event) => upload(event.target.files?.[0])} type="file" />
+            <PrimaryButton disabled={!landingSource.trim()} onClick={() => {
+              setSource(landingSource);
+              setIsDemoResume(false);
+              createCheckpoint("Initial paste", landingSource);
+              setShowLanding(false);
+            }}>Review my resume <Icon name="arrow" size={15} /></PrimaryButton>
+          </ImportActions>
+        </ImportCard>
+        <LandingPrivacy>Your source stays in this browser until you choose to sign in and start an AI review.</LandingPrivacy>
+      </LandingMain>
+    </LandingShell>
   );
 }
 
@@ -78,7 +89,7 @@ const LandingMain = styled.section`
   text-align: center;
 `;
 
-const LandingEyebrow = styled.div`
+const LandingEyebrow = styled(Label).attrs({ as: "div" })`
   ${typography.body}
   color: ${colors.forest};
   font-size: ${textSize.s11};
@@ -106,7 +117,7 @@ const LandingCopy = styled(Body).attrs({ as: "p" })`
   line-height: 1.6;
 `;
 
-const ImportTabs = styled.div`
+const ImportTabs = styled(Label).attrs({ as: "div" })`
   ${typography.body}
   padding: 2px 2px 11px;
   color: ${colors.inkMuted};
@@ -129,4 +140,31 @@ const LandingPrivacy = styled(Body).attrs({ as: "p" })`
   margin: 16px 0 0;
   color: ${colors.inkMuted};
   font-size: ${textSize.s10};
+`;
+
+const ImportCard = styled(Card)`
+  ${typography.body}
+  width: min(100%, 650px);
+  margin-top: 35px;
+  padding: 15px;
+  border: 1px solid ${colors.borderStrong};
+  border-radius: 14px;
+  background: ${colors.surfaceStrong};
+  box-shadow: ${shadows.soft};
+  text-align: left;
+`;
+
+const ImportTextarea = styled(Textarea)`
+  ${typography.body}
+  width: 100%;
+  min-height: 190px;
+  padding: 13px;
+  resize: vertical;
+  border: 1px solid ${colors.border};
+  border-radius: 9px;
+  color: ${colors.code};
+  background: ${colors.editorSurface};
+  font-family: ${fonts.mono};
+  font-size: ${textSize.s11};
+  line-height: 1.55;
 `;

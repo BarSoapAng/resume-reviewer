@@ -2,8 +2,7 @@ import styled from "styled-components";
 import { colors, textSize, typography } from "../../lib/style";
 import { Button } from "./Button";
 
-export { QuietButton };
-const QuietButton = styled(Button)`
+export const QuietButton = styled(Button)`
   ${typography.body}
   display: inline-flex;
   height: 31px;

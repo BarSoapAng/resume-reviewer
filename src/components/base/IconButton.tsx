@@ -2,8 +2,7 @@ import styled from "styled-components";
 import { colors, typography } from "../../lib/style";
 import { Button } from "./Button";
 
-export { IconButton };
-const IconButton = styled(Button)`
+export const IconButton = styled(Button)`
   ${typography.body}
   display: grid;
   width: 32px;

@@ -60,7 +60,7 @@ type DisplayIssue = {
   status: ReviewIssue["status"];
 };
 
-type LocalVersion = { id: string; source: string; reason: string; createdAt: string };
+type LocalVersion = { id: string; source: string; reason: string; createdAt: string; };
 
 const initialIssues: DisplayIssue[] = demoIssues.map((issue) => ({
   ...issue,
@@ -69,7 +69,7 @@ const initialIssues: DisplayIssue[] = demoIssues.map((issue) => ({
   status: "open",
 }));
 
-function toDisplayIssues(issues: ReviewIssue[], questions: Array<{ issueIds: string[]; text: string }>): DisplayIssue[] {
+function toDisplayIssues(issues: ReviewIssue[], questions: Array<{ issueIds: string[]; text: string; }>): DisplayIssue[] {
   return issues.map((issue) => ({
     id: issue.id,
     severity: issue.severity,
@@ -96,7 +96,7 @@ export function useResumeWorkspace() {
   const [isDemoResume, setIsDemoResume] = useState(source === initialLatex);
   const [discipline, setDiscipline] = useState<DisciplineType>("software");
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string; }>>([]);
   const [reviewId, setReviewId] = useState<string>();
   const [projectId, setProjectId] = useState<string>();
   const [reviewState, setReviewState] = useState<ReviewState>("imported");
@@ -116,7 +116,6 @@ export function useResumeWorkspace() {
   });
   const fileInput = useRef<HTMLInputElement>(null);
   const landingFileInput = useRef<HTMLInputElement>(null);
-
 
   useEffect(() => {
     if (showLanding) return;
@@ -138,9 +137,6 @@ export function useResumeWorkspace() {
     }, 500);
     return () => window.clearTimeout(timer);
   }, [projectId, source]);
-
-
-
 
   const upload = (file?: File) => {
     if (!file) return;
@@ -280,7 +276,71 @@ export function useResumeWorkspace() {
     document.getElementById(`workspace-tab-${nextTab}`)?.focus();
   };
 
-  return { openCheckout, showLanding, activeTab, authEmail, authMessage, emailSignIn, authOpen, beginReview, checkoutPending, compile, compileError, compileState, createCheckpoint, diagnostics, discipline, downloadSource, editor, edits, fileInput, githubOAuthEnabled, googleOAuthEnabled, historyOpen, isDemoResume, issues, landingFileInput, landingSource, message, messages, moveTabFocus, paymentRequired, pdfUrl, projectId, resolveIssue, restoreVersion, reviewBusy, reviewError, reviewId, reviewOpen, reviewState, selectIssue, selectTab, selectedIssue, sendMessage, setActiveTab, setAuthEmail, setAuthOpen, setDiscipline, setEdits, setHistoryOpen, setIsDemoResume, setLandingSource, setMessage, setReviewError, setReviewOpen, setShowLanding, setSource, source, tabs, unresolvedCount, updateEdit, upload, userEmail, versions };
+  return {
+    openCheckout,
+    showLanding,
+    activeTab,
+    authEmail,
+    authMessage,
+    emailSignIn,
+    authOpen,
+    beginReview,
+    checkoutPending,
+    compile,
+    compileError,
+    compileState,
+    createCheckpoint,
+    diagnostics,
+    discipline,
+    downloadSource,
+    editor,
+    edits,
+    fileInput,
+    githubOAuthEnabled,
+    googleOAuthEnabled,
+    historyOpen,
+    isDemoResume,
+    issues,
+    landingFileInput,
+    landingSource,
+    message,
+    messages,
+    moveTabFocus,
+    paymentRequired,
+    pdfUrl,
+    projectId,
+    resolveIssue,
+    restoreVersion,
+    reviewBusy,
+    reviewError,
+    reviewId,
+    reviewOpen,
+    reviewState,
+    selectIssue,
+    selectTab,
+    selectedIssue,
+    sendMessage,
+    setActiveTab,
+    setAuthEmail,
+    setAuthOpen,
+    setDiscipline,
+    setEdits,
+    setHistoryOpen,
+    setIsDemoResume,
+    setLandingSource,
+    setMessage,
+    setReviewError,
+    setReviewOpen,
+    setShowLanding,
+    setSource,
+    source,
+    tabs,
+    unresolvedCount,
+    updateEdit,
+    upload,
+    userEmail,
+    versions,
+  };
 }
 
 export type WorkspaceModel = ReturnType<typeof useResumeWorkspace>;

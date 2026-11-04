@@ -1,8 +1,7 @@
 import styled from "styled-components";
-import { colors, typography } from "../lib/style";
+import { colors, typography } from "../../lib/style";
 
-export { ToolHeader };
-const ToolHeader = styled.div`
+export const ToolHeader = styled.div`
   ${typography.body}
   display: flex;
   min-height: 48px;
