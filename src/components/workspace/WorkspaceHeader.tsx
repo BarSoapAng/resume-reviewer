@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { colors, fontSize, spacing, radius, alpha, shadows, Body, Text, Strong } from "../../lib/style";
 import { Button } from "../base/Button";
@@ -17,6 +17,16 @@ export function WorkspaceHeader({ model }: { model: Pick<WorkspaceModel,
   const [draft, setDraft] = useState(filename);
   const historyButton = useRef<HTMLButtonElement>(null);
   const popover = useRef<HTMLDivElement>(null);
+  const actions = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = actions.current;
+    if (!element) return;
+    const update = () => element.parentElement?.style.setProperty("--header-actions-width", `${element.offsetWidth}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     if (!historyOpen) return;
     const previous = document.activeElement;
@@ -38,15 +48,15 @@ export function WorkspaceHeader({ model }: { model: Pick<WorkspaceModel,
   const commit = () => { if (draft.trim()) setFilename(`${draft.trim()}${extension}`); setEditing(false); };
   return (
     <Header>
-      <SaveActions>
-        <SavedState role="status">{saveState === "pending" ? "Unsaved changes" : saveState === "saving" ? "Saving..." : saveState === "local" ? "Saved locally" : saveState === "failed" ? "Not saved" : "Saved"}</SavedState>
-        {saveState === "failed" && <TextButton onClick={() => void retrySave()}>Retry save</TextButton>}
-      </SaveActions>
       {editing ? <TitleEditor><TitleInput aria-label="Document filename" autoFocus value={draft} onChange={(event) => setDraft(event.target.value)} onBlur={commit} onKeyDown={(event) => {
         if (event.key === "Enter") { event.preventDefault(); commit(); }
         if (event.key === "Escape") { event.preventDefault(); setEditing(false); }
       }} /><Text>{extension}</Text></TitleEditor> : <DocumentTitle title="Rename document" onClick={() => { setDraft(filename.slice(0, filename.length - extension.length)); setEditing(true); }}><Text>{filename}</Text><Icon name="pencil" size={spacing.sm} /></DocumentTitle>}
-      <HeaderActions>
+      <HeaderActions ref={actions}>
+        <SaveActions>
+          <SavedState role="status">{saveState === "pending" ? "Unsaved changes" : saveState === "saving" ? "Saving..." : saveState === "local" ? "Saved locally" : saveState === "failed" ? "Not saved" : "Saved"}</SavedState>
+          {saveState === "failed" && <TextButton onClick={() => void retrySave()}>Retry save</TextButton>}
+        </SaveActions>
         <IconButton ref={historyButton} aria-expanded={historyOpen} aria-controls="version-history" aria-label="Version history" onClick={() => setHistoryOpen((open) => !open)} title="Version history"><Icon name="history" /></IconButton>
         <Avatar aria-label={userEmail ? `Sign out ${userEmail}` : "Sign in"} onClick={() => userEmail ? void signOut() : setAuthOpen(true)} title={userEmail ?? "Sign in"}>{userEmail ? userEmail.slice(0, 2).toUpperCase() : "?"}</Avatar>
       </HeaderActions>
@@ -61,8 +71,9 @@ export function WorkspaceHeader({ model }: { model: Pick<WorkspaceModel,
   );
 }
 const Header = styled.header`
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
   min-width: 0;
   align-items: center;
   gap: ${spacing.sm};
@@ -71,11 +82,14 @@ const Header = styled.header`
   background: ${colors.paper[100]};
 `;
 const DocumentTitle = styled(Button)`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: ${spacing.xxs};
-  max-width: 45vw;
+  max-width: max(0px, calc(100% - 2 * (var(--header-actions-width, 160px) + ${spacing.lg})));
   min-width: 0;
   padding: ${spacing.xxs};
   overflow: hidden;
@@ -90,15 +104,19 @@ const DocumentTitle = styled(Button)`
   svg { flex-shrink: 0; }
 `;
 const TitleEditor = styled.div`
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   min-width: 0;
-  max-width: 45vw;
+  max-width: max(0px, calc(100% - 2 * (var(--header-actions-width, 160px) + ${spacing.lg})));
   align-items: center;
   font-size: ${fontSize.sm};
 `;
 const TitleInput = styled.input`
   min-width: 0;
   width: min(35vw, ${spacing["10xl"]});
+  flex: 1;
   padding: ${spacing.xxs};
   border: ${spacing.hairline} solid ${colors.paper[400]};
   border-radius: ${radius.xs};
@@ -107,9 +125,8 @@ const TitleInput = styled.input`
 const SaveActions = styled.div`
   display: flex;
   min-width: 0;
-  align-items: center;
-  gap: ${spacing.xs};
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-end;
 `;
 const HeaderActions = styled.div`
   display: flex;

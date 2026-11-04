@@ -26,7 +26,7 @@ export function PreviewPanel({ model }: {
   return (
     <PanelFrame $mobileActive={activeTab === "preview"} aria-labelledby="workspace-tab-preview" id="workspace-panel-preview" role="tabpanel">
       <ToolHeader>
-        <ToolTitle>Preview</ToolTitle>
+        <ToolTitle><Icon name="preview" size={spacing.md} /> Preview</ToolTitle>
         <ToolActions>
           <CompileButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
             {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing.md} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
