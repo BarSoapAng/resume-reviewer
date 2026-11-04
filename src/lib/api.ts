@@ -127,3 +127,7 @@ export async function decideEdit(editId: string, decision: "accept" | "reject") 
     { method: "POST" },
   );
 }
+
+export async function createCheckout() {
+  return request<{ url: string }>("/api/payments/checkout", { method: "POST" });
+}

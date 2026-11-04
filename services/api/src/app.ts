@@ -3,7 +3,7 @@ import Fastify, { type FastifyRequest } from "fastify";
 import { z } from "zod";
 import { disciplines, type Principal } from "./domain.js";
 import { HttpError } from "./errors.js";
-import { parseKofiWebhook } from "./kofi.js";
+import type { createStripePayments } from "./stripe.js";
 import type { Authenticator, Compiler, Repository, ReviewEngine } from "./ports.js";
 
 const IdParams = z.object({ id: z.string().uuid() });
@@ -27,7 +27,7 @@ export interface AppDependencies {
   authenticator: Authenticator;
   compiler: Compiler;
   reviewer: ReviewEngine;
-  kofiVerificationToken: string;
+  payments?: ReturnType<typeof createStripePayments>;
   corsOrigin?: string;
   requireReviewEntitlement?: boolean;
 }
@@ -43,9 +43,6 @@ async function principal(request: FastifyRequest, authenticator: Authenticator):
 export async function createApp(deps: AppDependencies) {
   const app = Fastify({ logger: false, bodyLimit: 1_100_000 });
   await app.register(cors, { origin: deps.corsOrigin ?? false });
-  app.addContentTypeParser("application/x-www-form-urlencoded", { parseAs: "string" }, (_request, body, done) => {
-    try { done(null, Object.fromEntries(new URLSearchParams(body.toString()))); } catch (error) { done(error as Error); }
-  });
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HttpError) return reply.code(error.statusCode).send({ error: error.message });
     if (error instanceof z.ZodError) return reply.code(400).send({ error: "Invalid request", details: error.issues });
@@ -172,12 +169,26 @@ export async function createApp(deps: AppDependencies) {
     return { entitlements: await deps.repository.listEntitlements(user.userId) };
   });
 
-  app.post("/api/webhooks/kofi", async (request, reply) => {
-    let payment;
-    try { payment = parseKofiWebhook(request.body, deps.kofiVerificationToken); }
-    catch { throw new HttpError(401, "Invalid Ko-fi webhook"); }
-    const result = await deps.repository.recordKofiPayment(payment);
-    return reply.code(200).send({ received: true, result });
+  app.post("/api/payments/checkout", async (request) => {
+    const user = await principal(request, deps.authenticator);
+    if (!deps.payments) throw new HttpError(503, "Payments are not configured");
+    return deps.payments.checkout(user);
+  });
+
+  await app.register(async (webhooks) => {
+    webhooks.removeContentTypeParser("application/json");
+    webhooks.addContentTypeParser("application/json", { parseAs: "buffer" }, (_request, body, done) => done(null, body));
+    webhooks.post("/api/webhooks/stripe", async (request) => {
+      if (!deps.payments) throw new HttpError(503, "Payments are not configured");
+      let payment;
+      try {
+        const signature = request.headers["stripe-signature"];
+        if (typeof signature !== "string") throw new Error("Missing signature");
+        payment = deps.payments.parseWebhook(request.body as Buffer, signature);
+      } catch { throw new HttpError(400, "Invalid Stripe webhook"); }
+      const result = payment ? await deps.repository.recordStripePayment(payment) : "ignored";
+      return { received: true, result };
+    });
   });
 
   return app;

@@ -804,7 +804,7 @@ Compiler has:
 
 - no database credentials
 - no OpenAI credentials
-- no Ko-fi secrets
+- no Stripe secrets
 - no application secrets
 - restricted filesystem
 - memory limits
@@ -1310,44 +1310,21 @@ Hosted AI resume review      $1 minimum
 Use:
 
 ```text
-Ko-fi
+Stripe
 ```
 
 for MVP payment handling.
 
-Ko-fi can send an HTTP webhook when payments occur.
+Stripe Checkout lets the signed-in user choose an amount, with a $1 USD minimum.
 
-Ko-fi also collects the supporter's email as part of a payment.
+1. User signs into the resume app and clicks `Start AI review`.
+2. If no entitlement exists, the API creates a Stripe Checkout Session for that account.
+3. The user chooses an amount and completes payment in Stripe.
+4. A signature-verified Stripe webhook records the payment and grants one review entitlement using the account ID in session metadata.
+5. Duplicate events do not grant additional entitlements.
+6. The user returns to the app and checks again to start the review.
 
-Therefore, for MVP:
-
-1. User signs into the resume app.
-2. They click `Start AI review`.
-3. If no entitlement exists, show Ko-fi payment page.
-4. Tell them to use the same email as their resume-review account.
-5. Ko-fi sends payment webhook.
-6. Backend records the payment.
-7. Match payment email to account email.
-8. Grant one review entitlement.
-9. UI polls/refetches entitlement state.
-10. Review unlocks.
-
-If emails do not match:
-
-```text
-Payment not automatically matched.
-Contact/support recovery flow.
-```
-
-Do not build a wallet.
-
-Do not build virtual credits.
-
-Do not build subscriptions.
-
-Not yet.
-
-Ko-fi's free mode currently takes 0% on one-time tips, although Stripe/PayPal processing fees still apply.
+Do not build a wallet, virtual credits, or subscriptions.
 
 ---
 
@@ -1400,7 +1377,7 @@ POST /api/edits/:id/reject
 
 POST /api/versions/:id/restore
 
-POST /api/webhooks/kofi
+POST /api/webhooks/stripe
 
 GET /api/account/entitlements
 ```
@@ -1629,7 +1606,7 @@ Test:
 - source anchoring
 - patch generation
 - fact extraction
-- Ko-fi webhook handling
+- Stripe webhook handling
 - version creation
 
 ### Integration
@@ -2142,7 +2119,7 @@ Cover API and hosting costs.
 
 ## Build
 
-Ko-fi integration.
+Stripe integration.
 
 Flow:
 
@@ -2151,11 +2128,11 @@ Start review
 ↓
 No entitlement
 ↓
-Ko-fi payment
+Stripe payment
 ↓
 Webhook
 ↓
-Match payment email
+Match signed-in account ID from Checkout Session metadata
 ↓
 Create entitlement
 ↓
@@ -2374,7 +2351,7 @@ Browser ─────► Application API ─────────► Supaba
    │                    │                   ├─ Postgres
    │                    │                   └─ Storage
    │                    │
-   │                    ├──────────────► Ko-fi webhook
+   │                    ├──────────────► Stripe webhook
    │                    │
    │                    ▼
    │             Compiler Service
@@ -2420,7 +2397,7 @@ Storage
 Supabase Storage
 
 Payments
-Ko-fi
+Stripe
 
 Analytics
 PostHog

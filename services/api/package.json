@@ -15,6 +15,7 @@
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.6.1",
     "postgres": "^3.4.7",
+    "stripe": "^23.1.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {

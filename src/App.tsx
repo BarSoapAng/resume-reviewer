@@ -12,6 +12,7 @@ import { Icon } from "./components/Icon";
 import { breakpoints, colors, shadows } from "./lib/styles";
 import {
   compileLatex,
+  createCheckout,
   createProject,
   decideEdit,
   sendReviewMessage,
@@ -139,6 +140,7 @@ function App() {
   const [edits, setEdits] = useState<EditProposal[]>([]);
   const [reviewBusy, setReviewBusy] = useState(false);
   const [reviewError, setReviewError] = useState<string>();
+  const [checkoutPending, setCheckoutPending] = useState(false);
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [compileState, setCompileState] = useState<"idle" | "compiling" | "success" | "error">("idle");
   const [compileError, setCompileError] = useState<string>();
@@ -297,6 +299,7 @@ function App() {
       const currentProjectId = projectId ?? (await createProject("Technical resume", discipline, source)).id;
       setProjectId(currentProjectId);
       const turn = await startReview(currentProjectId);
+      setPaymentRequired(false);
       setReviewId(turn.id);
       applyTurn(turn);
       setIsDemoResume(false);
@@ -576,8 +579,20 @@ function App() {
                     {paymentRequired && (
                       <PaymentCard>
                         <strong>Pay what you want, starting at $1</strong>
-                        <span>Use the same email as your Draftwise account. One payment unlocks one complete review.</span>
-                        <a href={import.meta.env.VITE_KOFI_PAYMENT_URL ?? "#"} rel="noreferrer" target="_blank">Continue to Ko-fi</a>
+                        <span>Choose your amount in Stripe. One payment unlocks one complete review.</span>
+                        <AnswerButton disabled={checkoutPending} onClick={async () => {
+                          const checkout = window.open("about:blank", "_blank");
+                          if (!checkout) { setReviewError("Allow pop-ups to open Stripe checkout"); return; }
+                          checkout.opener = null;
+                          setCheckoutPending(true);
+                          try {
+                            const { url } = await createCheckout();
+                            checkout.location.href = url;
+                          } catch (error) {
+                            checkout.close();
+                            setReviewError(error instanceof Error ? error.message : "Could not open checkout");
+                          } finally { setCheckoutPending(false); }
+                        }}>{checkoutPending ? "Opening checkout..." : "Continue to Stripe"}</AnswerButton>
                         <TextButton onClick={() => void beginReview()}>I’ve paid — check again</TextButton>
                       </PaymentCard>
                     )}
@@ -1402,7 +1417,6 @@ const PaymentCard = styled.div`
   line-height: 1.45;
 
   span { color: ${colors.inkMuted}; }
-  a { padding: 8px 10px; border-radius: 6px; color: white; background: ${colors.forest}; font-weight: 700; text-align: center; text-decoration: none; }
 `;
 
 const Composer = styled.div`

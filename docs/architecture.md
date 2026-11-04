@@ -17,7 +17,7 @@ The browser may compile an anonymous draft but must authenticate before creating
 - The compiler receives one bounded `.tex` string and has no application, database, payment, or AI credentials.
 - Production must run the compiler container without outbound networking, with a read-only root filesystem, ephemeral work directories, CPU/RAM limits, and a hard timeout.
 - The Supabase secret key is server-only. User operations are checked in the API and protected again by row-level security.
-- Ko-fi webhooks are token-validated and idempotent by provider payment ID.
+- Stripe webhooks verify signatures against the raw request body and are idempotent by Checkout Session ID.
 - OpenAI requests omit contact details where possible and use `store: false`.
 - Analytics and error reports must never contain source, resume text, messages, names, or email addresses.
 

@@ -34,7 +34,7 @@ function repository(overrides: Partial<Repository> = {}): Repository {
     acceptEdit: vi.fn(),
     listEntitlements: vi.fn(async () => []),
     consumeEntitlement: vi.fn(),
-    recordKofiPayment: vi.fn(async () => "created"),
+    recordStripePayment: vi.fn(async () => "created"),
     ...overrides,
   } as Repository;
 }
@@ -45,7 +45,13 @@ async function app(repo = repository(), requireReviewEntitlement?: boolean) {
     authenticator: { authenticate: vi.fn(async (token) => token === "valid" ? user : null) },
     compiler: { compile: vi.fn(async () => ({ ok: true, pdfBase64: "cGRm", diagnostics: [], cached: false })) },
     reviewer: { runTurn: vi.fn(async () => ({ state: "probing" as const, message: "Review", issues: [], questions: [], edits: [] })) },
-    kofiVerificationToken: "secret",
+    payments: {
+      checkout: vi.fn(async () => ({ url: "https://checkout.stripe.com/test" })),
+      parseWebhook: (body, signature) => {
+        if (!Buffer.isBuffer(body) || signature !== "valid") throw new Error("Invalid signature");
+        return JSON.parse(body.toString());
+      },
+    },
     requireReviewEntitlement,
   });
 }
@@ -116,13 +122,30 @@ describe("API", () => {
     await instance.close();
   });
 
-  it("acknowledges a valid Ko-fi webhook and delegates idempotency", async () => {
-    const recordKofiPayment = vi.fn(async () => "duplicate" as const);
-    const instance = await app(repository({ recordKofiPayment }));
-    const response = await instance.inject({ method: "POST", url: "/api/webhooks/kofi", payload: { verification_token: "secret", transaction_id: "txn", email: "student@example.com", amount: "1", currency: "USD" } });
+  it("creates checkout only for the signed-in account", async () => {
+    const instance = await app();
+    expect((await instance.inject({ method: "POST", url: "/api/payments/checkout" })).statusCode).toBe(401);
+    const response = await instance.inject({ method: "POST", url: "/api/payments/checkout", headers: { authorization: "Bearer valid" } });
+    expect(response.json()).toEqual({ url: "https://checkout.stripe.com/test" });
+    await instance.close();
+  });
+
+  it("verifies the raw Stripe payload and delegates idempotency", async () => {
+    const recordStripePayment = vi.fn(async () => "duplicate" as const);
+    const instance = await app(repository({ recordStripePayment }));
+    const payload = { userId: user.userId, providerPaymentId: "cs_test", email: user.email, amount: "1.00", currency: "USD", status: "paid" };
+    const response = await instance.inject({ method: "POST", url: "/api/webhooks/stripe", headers: { "stripe-signature": "valid" }, payload });
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ received: true, result: "duplicate" });
-    expect(recordKofiPayment).toHaveBeenCalledOnce();
+    expect(recordStripePayment).toHaveBeenCalledWith(payload);
+    await instance.close();
+  });
+
+  it("rejects unsigned webhooks without recording payment", async () => {
+    const repo = repository();
+    const instance = await app(repo);
+    expect((await instance.inject({ method: "POST", url: "/api/webhooks/stripe", payload: {} })).statusCode).toBe(400);
+    expect(repo.recordStripePayment).not.toHaveBeenCalled();
     await instance.close();
   });
 });

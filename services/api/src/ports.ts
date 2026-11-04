@@ -2,7 +2,7 @@ import type {
   CompileResult,
   Discipline,
   Entitlement,
-  KofiPayment,
+  StripePayment,
   Principal,
   ProposedEdit,
   ResumeProject,
@@ -35,7 +35,7 @@ export interface Repository {
   acceptEdit(editId: string, userId: string, compile: (source: string) => Promise<CompileResult>): Promise<ResumeVersion | "stale" | "compile_failed" | null>;
   listEntitlements(userId: string): Promise<Entitlement[]>;
   consumeEntitlement(userId: string, sessionId: string): Promise<boolean>;
-  recordKofiPayment(payment: KofiPayment): Promise<"created" | "duplicate" | "unmatched">;
+  recordStripePayment(payment: StripePayment): Promise<"created" | "duplicate" | "unmatched">;
 }
 
 export interface Compiler {

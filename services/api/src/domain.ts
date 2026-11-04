@@ -66,7 +66,8 @@ export interface Entitlement {
   createdAt: Date;
 }
 
-export interface KofiPayment {
+export interface StripePayment {
+  userId: string;
   providerPaymentId: string;
   email: string;
   amount: string;

@@ -2,7 +2,7 @@ import { and, count, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import type { CompileResult, Entitlement, KofiPayment, ProposedEdit, ResumeProject, ResumeVersion, ReviewContextSnapshot, ReviewSession, ReviewState, ReviewTurnResponse } from "../domain.js";
+import type { CompileResult, Entitlement, StripePayment, ProposedEdit, ResumeProject, ResumeVersion, ReviewContextSnapshot, ReviewSession, ReviewState, ReviewTurnResponse } from "../domain.js";
 import type { Repository } from "../ports.js";
 import { payments, projects, proposedEdits, resumeFacts, reviewEntitlements, reviewIssues, reviewMessages, reviewSessions, versions } from "./schema.js";
 
@@ -238,11 +238,10 @@ export class PostgresRepository implements Repository {
     return rows.length === 1;
   }
 
-  async recordKofiPayment(payment: KofiPayment) {
+  async recordStripePayment(payment: StripePayment) {
     return await this.db.transaction(async (tx) => {
-      const users = await tx.execute(sql<{ id: string }>`select id from auth.users where lower(email) = lower(${payment.email}) limit 1`) as unknown as Array<{ id: string }>;
-      const userId = users[0]?.id ?? null;
-      const inserted = await tx.insert(payments).values({ userId, provider: "kofi", providerPaymentId: payment.providerPaymentId, email: payment.email.toLowerCase(), amount: payment.amount, currency: payment.currency.toUpperCase(), status: payment.status }).onConflictDoNothing().returning();
+      const userId = payment.userId;
+      const inserted = await tx.insert(payments).values({ userId, provider: "stripe", providerPaymentId: payment.providerPaymentId, email: payment.email.toLowerCase(), amount: payment.amount, currency: payment.currency.toUpperCase(), status: payment.status }).onConflictDoNothing().returning();
       if (!inserted[0]) return "duplicate";
       if (!userId || payment.status !== "paid") return "unmatched";
       await tx.insert(reviewEntitlements).values({ userId, paymentId: inserted[0].id, status: "available" }).onConflictDoNothing();

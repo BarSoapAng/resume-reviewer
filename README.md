@@ -6,7 +6,7 @@ Draftwise is an open-source technical resume reviewer for software and mechanica
 
 - Responsive React workspace with CodeMirror, resizable panes, mobile tabs, local autosave, `.tex` import/export, checkpoints, source-linked issues, edit decisions, compiler diagnostics, and PDF preview/download
 - Supabase email magic-link and Google/GitHub OAuth session handling
-- Node/Fastify application API with authenticated project, review, message, edit, restore, entitlement, and Ko-fi webhook routes
+- Node/Fastify application API with authenticated project, review, message, edit, restore, entitlement, and Stripe webhook routes
 - PostgreSQL/Drizzle schema plus Supabase row-level-security migration
 - Structured OpenAI Responses reviewer with `store: false`, a deterministic state machine, fact grounding, stale-anchor protection, and version-controlled rubrics
 - 50 public golden eval cases split evenly between software and mechanical engineering
@@ -29,7 +29,7 @@ docs/                 architecture and privacy notes
 
 ## Local setup
 
-Copy `.env.example` to `.env` and configure Supabase, OpenAI, Ko-fi, and service URLs. `DATABASE_URL` must be a connection string for this Supabase project; do not leave the placeholder pointed at an unrelated local PostgreSQL server.
+Copy `.env.example` to `.env` and configure Supabase, OpenAI, Stripe, and service URLs. `DATABASE_URL` must be a connection string for this Supabase project; do not leave the placeholder pointed at an unrelated local PostgreSQL server.
 
 Apply the migrations in filename order using the Supabase SQL Editor:
 
@@ -57,6 +57,32 @@ npm run dev
 Email magic-link authentication works without an external OAuth provider. Google and GitHub buttons require enabling those providers in the Supabase dashboard first.
 
 For production, use the hardened compiler container described in [services/compiler/README.md](./services/compiler/README.md). Do not run untrusted LaTeX in the API process.
+
+## Stripe payments
+
+One payment unlocks one complete review. Customers choose their amount in Stripe Checkout, starting at $1 USD.
+
+In Stripe, create a one-time USD price with **Customer chooses what to pay**, a minimum of **$1**, and a suggested amount of $1. Set these server-only values in the root `.env`:
+
+```dotenv
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
+REQUIRE_REVIEW_ENTITLEMENT=true
+```
+
+Use a price and secret key from the same Stripe test environment. `WEB_ORIGIN` controls the checkout return URL. Keep `REQUIRE_REVIEW_ENTITLEMENT=false` to bypass payments for local reviews; Stripe settings may be empty when payments are disabled.
+
+For local payment testing, forward signed webhooks to the application API:
+
+```bash
+stripe login
+stripe listen --events checkout.session.completed,checkout.session.async_payment_succeeded --forward-to localhost:8787/api/webhooks/stripe
+```
+
+Copy the listener's `whsec_...` secret into `.env` and restart the API. Start a review while signed in, open Stripe Checkout, and use Stripe's test card `4242 4242 4242 4242` with a future expiry and any CVC. Return to the original app tab and click **I've paid - check again** after payment. Payment email may differ from account email: the API binds the Checkout Session to the signed-in account.
+
+For production, configure a Stripe snapshot webhook destination for those same events at `https://YOUR_API_HOST/api/webhooks/stripe` and use its signing secret with your live secret key and price. Duplicate events grant no additional entitlements.
 
 ## Verification
 

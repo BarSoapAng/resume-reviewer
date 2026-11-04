@@ -1,3 +1,4 @@
+import { createStripePayments } from "./stripe.js";
 import { createApp } from "./app.js";
 import { createSupabaseAuthenticator } from "./auth.js";
 import { createHttpCompiler } from "./compiler.js";
@@ -18,7 +19,9 @@ const app = await createApp({
   authenticator: createSupabaseAuthenticator(required("SUPABASE_URL"), required("SUPABASE_PUBLISHABLE_KEY")),
   compiler: createHttpCompiler(required("COMPILER_URL"), process.env.COMPILER_TOKEN),
   reviewer,
-  kofiVerificationToken: requireReviewEntitlement ? required("KOFI_VERIFICATION_TOKEN") : process.env.KOFI_VERIFICATION_TOKEN ?? "disabled",
+  payments: requireReviewEntitlement || process.env.STRIPE_SECRET_KEY
+    ? createStripePayments(required("STRIPE_SECRET_KEY"), required("STRIPE_WEBHOOK_SECRET"), required("STRIPE_PRICE_ID"), required("WEB_ORIGIN"))
+    : undefined,
   corsOrigin: process.env.WEB_ORIGIN,
   requireReviewEntitlement,
 });
