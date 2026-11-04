@@ -9,7 +9,7 @@ describe("AI reviewer adapter", () => {
     const fact = { id: "fact", projectId: "project", subject: null, section: "Experience", statement: "Used Redis", source: "user_message" as const, sourceId: "message", createdAt: new Date().toISOString() };
     const issue = { id: "issue", ruleId: "SWE_1", severity: "high" as const, category: "impact", description: "Weak impact", reasoning: "No result", sourceAnchor: { versionId: "version", exactText: "resume", occurrence: 0 }, status: "probing" as const };
     const getReviewContext = vi.fn(async () => ({ project, facts: [fact], issues: [issue], recentMessages: [{ role: "assistant" as const, content: "Question" }, { role: "user" as const, content: "Used Redis" }] }));
-    const runner = vi.fn(async (): Promise<ReviewTurn> => ({ message: "Thanks", stage: "probing", issues: [issue], questions: [], facts: [fact], edits: [], recommendedTransition: "ready_to_edit" }));
+    const runner = vi.fn(async (): Promise<ReviewTurn> => ({ message: "Thanks", stage: "probing", issues: [{ ...issue, status: "resolved" }], questions: [], facts: [fact], edits: [], recommendedTransition: "ready_to_edit" }));
     const reviewer = createAiReviewer({ getReviewContext } as unknown as Repository, { runner, rubricLoader: vi.fn(async () => []) });
     const session = { id: "session", projectId: "project", rubricVersion: "v1", state: "probing" as const, model: "configured", startedAt: new Date(), completedAt: null };
 

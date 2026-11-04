@@ -4,7 +4,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import type { CompileResult, Entitlement, StripePayment, ProposedEdit, ResumeProject, ResumeVersion, ReviewContextSnapshot, ReviewSession, ReviewState, ReviewTurnResponse } from "../domain.js";
 import type { Repository } from "../ports.js";
-import { payments, projects, proposedEdits, resumeFacts, reviewEntitlements, reviewIssues, reviewMessages, reviewSessions, versions } from "./schema.js";
+import { conversationTurns, payments, projects, proposedEdits, resumeFacts, reviewEntitlements, reviewIssues, reviewMessages, reviewSessions, versions } from "./schema.js";
+import type { ConversationPart, QuestionSubmission, WorkspaceVersion } from "../../../../packages/reviewer/src/conversation.js";
+import { HttpError } from "../errors.js";
+import { trustedQuestionAnswers } from "../questions.js";
+import { isAnchorCurrent } from "../../../../packages/reviewer/src/anchors.js";
 
 type Database = ReturnType<typeof drizzle>;
 
@@ -44,7 +48,7 @@ export class PostgresRepository implements Repository {
   async createProject(input: Parameters<Repository["createProject"]>[0]) {
     return await this.db.transaction(async (tx) => {
       const [created] = await tx.insert(projects).values({ userId: input.userId, title: input.title, discipline: input.discipline, currentSource: input.source }).returning();
-      const [initial] = await tx.insert(versions).values({ projectId: created.id, latexSource: input.source, createdBy: "user", reason: "Initial import" }).returning();
+      const [initial] = await tx.insert(versions).values({ projectId: created.id, latexSource: input.source, createdBy: "user", reason: "Initial import", metadata: { filename: input.title, discipline: input.discipline, kind: "upload" } }).returning();
       const [updated] = await tx.update(projects).set({ currentVersionId: initial.id }).where(eq(projects.id, created.id)).returning();
       return project(updated);
     });
@@ -56,8 +60,29 @@ export class PostgresRepository implements Repository {
   }
 
   async updateProject(projectId: string, userId: string, patch: Parameters<Repository["updateProject"]>[2]) {
-    const [row] = await this.db.update(projects).set({ ...(patch.title !== undefined ? { title: patch.title } : {}), ...(patch.discipline !== undefined ? { discipline: patch.discipline } : {}), ...(patch.source !== undefined ? { currentSource: patch.source } : {}), updatedAt: new Date() }).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).returning();
-    return row ? project(row) : null;
+    return this.db.transaction(async (tx) => {
+      const [owned] = await tx.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
+      if (!owned) return null;
+      let currentVersionId = owned.currentVersionId;
+      const changed = (patch.source !== undefined && patch.source !== owned.currentSource) || (patch.title !== undefined && patch.title !== owned.title) || (patch.discipline !== undefined && patch.discipline !== owned.discipline);
+      if (changed || (patch.version && patch.version.kind !== "autosave")) {
+        const [snapshot] = await tx.insert(versions).values({ id: patch.version?.id, projectId, parentVersionId: currentVersionId, latexSource: patch.source ?? owned.currentSource, createdBy: "user", reason: patch.version?.reason || "Autosave", metadata: { filename: patch.title ?? owned.title, discipline: patch.discipline ?? owned.discipline, kind: patch.version?.kind ?? "autosave", restoredFromId: patch.version?.restoredFromId }, ...(patch.version?.createdAt ? { createdAt: new Date(patch.version.createdAt) } : {}) }).onConflictDoNothing().returning();
+        if (snapshot) currentVersionId = snapshot.id;
+        else if (patch.version) {
+          const [existing] = await tx.select().from(versions).where(eq(versions.id, patch.version.id));
+          if (!existing || existing.projectId !== projectId || existing.latexSource !== (patch.source ?? owned.currentSource) || existing.metadata.filename !== (patch.title ?? owned.title) || existing.metadata.discipline !== (patch.discipline ?? owned.discipline) || (changed && existing.id !== owned.currentVersionId)) throw new HttpError(409, "Version does not match this save");
+        }
+      }
+      const [row] = await tx.update(projects).set({ ...(patch.title !== undefined ? { title: patch.title } : {}), ...(patch.discipline !== undefined ? { discipline: patch.discipline } : {}), ...(patch.source !== undefined ? { currentSource: patch.source } : {}), currentVersionId, updatedAt: new Date() }).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).returning();
+      return project(row);
+    });
+  }
+
+  async listVersions(projectId: string, userId: string): Promise<WorkspaceVersion[] | null> {
+    const owned = await this.getProjectForUser(projectId, userId);
+    if (!owned) return null;
+    const rows = await this.db.select().from(versions).where(eq(versions.projectId, projectId)).orderBy(sql`${versions.createdAt} desc`).limit(200);
+    return rows.map((row) => ({ documentId: projectId, id: row.id, source: row.latexSource, filename: row.metadata.filename ?? owned.title, discipline: row.metadata.discipline ?? owned.discipline, createdAt: row.createdAt.toISOString(), reason: row.reason, kind: (row.metadata.kind ?? (row.createdBy === "ai" ? "edit" : "checkpoint")) as WorkspaceVersion["kind"], restoredFromId: row.metadata.restoredFromId }));
   }
 
   async deleteProject(projectId: string, userId: string) {
@@ -84,19 +109,37 @@ export class PostgresRepository implements Repository {
     });
   }
 
-  async createReview(projectId: string, userId: string, rubricVersion: string, model: string) {
+  async createReview(projectId: string, userId: string, rubricVersion: string, model: string, turnId?: string) {
     const owned = await this.getProjectForUser(projectId, userId);
     if (!owned) return null;
-    const [row] = await this.db.insert(reviewSessions).values({ projectId, rubricVersion, model, state: "initial_review" }).returning();
-    return review(row);
+    return this.db.transaction(async (tx) => {
+      if (turnId) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${turnId}))`);
+        const existing = await this.getReviewForUser(turnId, userId);
+        if (existing) {
+          if (existing.projectId !== projectId) throw new HttpError(409, "Turn belongs to another document");
+          return existing;
+        }
+      }
+      const [row] = await tx.insert(reviewSessions).values({ id: turnId, projectId, rubricVersion, model, state: "initial_review" }).returning();
+      return review(row);
+    });
   }
 
-  async createEntitledReview(projectId: string, userId: string, rubricVersion: string, model: string) {
+  async createEntitledReview(projectId: string, userId: string, rubricVersion: string, model: string, turnId?: string) {
     if (!await this.getProjectForUser(projectId, userId)) return null;
     return await this.db.transaction(async (tx) => {
+      if (turnId) {
+        await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${turnId}))`);
+        const existing = await this.getReviewForUser(turnId, userId);
+        if (existing) {
+          if (existing.projectId !== projectId) throw new HttpError(409, "Turn belongs to another document");
+          return existing;
+        }
+      }
       const available = await tx.execute(sql<{ id: string }>`select id from review_entitlements where user_id = ${userId}::uuid and status = 'available' order by created_at for update skip locked limit 1`) as unknown as Array<{ id: string }>;
       if (!available[0]) return "payment_required" as const;
-      const sessionId = randomUUID();
+      const sessionId = turnId ?? randomUUID();
       const [row] = await tx.insert(reviewSessions).values({ id: sessionId, projectId, rubricVersion, model, state: "initial_review" }).returning();
       await tx.update(reviewEntitlements).set({ status: "consumed", sessionId }).where(and(eq(reviewEntitlements.id, available[0].id), eq(reviewEntitlements.status, "available")));
       return review(row);
@@ -124,12 +167,27 @@ export class PostgresRepository implements Repository {
     };
   }
 
-  async saveReviewTurn(reviewId: string, userId: string, turn: ReviewTurnResponse): Promise<ReviewTurnResponse | null> {
+  async getConversation(reviewId: string, userId: string) {
+    const session = await this.getReviewForUser(reviewId, userId);
+    if (!session) return null;
+    const rows = await this.db.select().from(reviewMessages).where(eq(reviewMessages.sessionId, reviewId)).orderBy(reviewMessages.createdAt, reviewMessages.id);
+    const turns = await this.db.select().from(conversationTurns).where(eq(conversationTurns.sessionId, reviewId));
+    return rows.filter((row) => row.role !== "system").map((row) => ({ id: row.id, turnId: row.turnId ?? row.id, documentId: session.projectId, role: row.role as "user" | "assistant", content: row.content, parts: (row.parts as ConversationPart[]).map((part) => {
+      if (part.type !== "questions") return part;
+      const response = turns.find((turn) => (turn.answers as QuestionSubmission | null)?.groupId === part.groupId)?.answers as QuestionSubmission | undefined;
+      return response ? { ...part, answers: response.answers } : part;
+    }) }));
+  }
+
+  async saveReviewTurn(reviewId: string, userId: string, turn: ReviewTurnResponse, turnId?: string): Promise<ReviewTurnResponse | null> {
     const session = await this.getReviewForUser(reviewId, userId);
     const context = await this.getReviewContext(reviewId, userId);
     if (!session || !context) return null;
+    if (turn.issues.some((issue) => !isAnchorCurrent(context.project.currentSource, context.project.currentVersionId ?? "", issue.sourceAnchor)) || turn.edits.some((edit) => edit.baseVersionId !== context.project.currentVersionId)) throw new HttpError(409, "The resume changed during this review response");
     if (!validTransition(session.state, turn.state)) throw new Error(`Invalid review transition: ${session.state} -> ${turn.state}`);
     return this.db.transaction(async (tx) => {
+      const [current] = await tx.select().from(projects).where(and(eq(projects.id, context.project.id), eq(projects.userId, userId))).for("update");
+      if (!current || current.currentVersionId !== context.project.currentVersionId || current.currentSource !== context.project.currentSource || current.discipline !== context.project.discipline) throw new HttpError(409, "The resume changed during this review response");
       const factIds = new Map<string, string>();
       const savedFacts: NonNullable<ReviewTurnResponse["facts"]> = [];
       for (const fact of turn.facts ?? []) {
@@ -168,18 +226,59 @@ export class PostgresRepository implements Repository {
         savedEdits.push({ ...edit, id, baseVersionId, issueIds: mappedIssueIds, citations });
       }
 
-      if (turn.message.trim()) await tx.insert(reviewMessages).values({ sessionId: reviewId, role: "assistant", content: turn.message });
+      const saved = { ...turn, facts: savedFacts, issues: savedIssues, questions: turn.questions.map((question) => ({ ...question, issueIds: question.issueIds.map((value) => issueIds.get(value) ?? value).filter(isUuid) })), edits: savedEdits };
+      const parts: ConversationPart[] = [{ type: "text", text: saved.message }];
+      if (saved.questions.length) parts.push({ type: "questions", groupId: turnId ?? randomUUID(), questions: saved.questions });
+      if (saved.edits.length) parts.push({ type: "edits", editIds: saved.edits.map((edit) => edit.id) });
+      await tx.insert(reviewMessages).values({ sessionId: reviewId, role: "assistant", content: turn.message, turnId, parts });
+      if (turnId) await tx.update(conversationTurns).set({ status: "completed", result: saved, updatedAt: new Date() }).where(and(eq(conversationTurns.id, turnId), eq(conversationTurns.userId, userId)));
       await tx.update(reviewSessions).set({ state: turn.state, ...(turn.state === "complete" ? { completedAt: new Date() } : {}) }).where(eq(reviewSessions.id, reviewId));
-      return { ...turn, facts: savedFacts, issues: savedIssues, questions: turn.questions.map((question) => ({ ...question, issueIds: question.issueIds.map((value) => issueIds.get(value) ?? value).filter(isUuid) })), edits: savedEdits };
+      return saved;
     });
   }
 
-  async addReviewMessage(reviewId: string, userId: string, content: string) {
+  async addReviewMessage(reviewId: string, userId: string, content: string, turnId?: string) {
     if (!await this.getReviewForUser(reviewId, userId)) return false;
     const [turns] = await this.db.select({ value: count() }).from(reviewMessages).where(and(eq(reviewMessages.sessionId, reviewId), eq(reviewMessages.role, "user")));
     if (turns.value >= 30) return false;
-    await this.db.insert(reviewMessages).values({ sessionId: reviewId, role: "user", content });
+    if (turnId) {
+      const [existing] = await this.db.select().from(reviewMessages).where(and(eq(reviewMessages.id, turnId), eq(reviewMessages.sessionId, reviewId)));
+      if (existing) return true;
+    }
+    await this.db.insert(reviewMessages).values({ id: turnId, sessionId: reviewId, role: "user", content, turnId, parts: [{ type: "text", text: content }] }).onConflictDoNothing();
     return true;
+  }
+
+  async claimTurn(reviewId: string, userId: string, turnId: string, content: string, questions?: QuestionSubmission): ReturnType<Repository["claimTurn"]> {
+    if (!await this.getReviewForUser(reviewId, userId)) throw new HttpError(404, "Review not found");
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${reviewId}))`);
+      const [existing] = await tx.select().from(conversationTurns).where(eq(conversationTurns.id, turnId));
+      if (existing && (existing.userId !== userId || existing.sessionId !== reviewId)) throw new HttpError(409, "Turn belongs to another review");
+      if (existing && (existing.content !== content || JSON.stringify(existing.answers) !== JSON.stringify(questions ?? null))) throw new HttpError(409, "Turn input has changed");
+      if (existing?.status === "completed") return { status: "completed", turn: existing.result as ReviewTurnResponse, content: existing.content };
+      await tx.update(conversationTurns).set({ status: "failed" }).where(and(eq(conversationTurns.sessionId, reviewId), eq(conversationTurns.status, "running"), sql`${conversationTurns.updatedAt} < now() - interval '10 minutes'`));
+      const [running] = await tx.select().from(conversationTurns).where(and(eq(conversationTurns.sessionId, reviewId), eq(conversationTurns.status, "running")));
+      if (running) return { status: "busy", content };
+      let trustedContent = content;
+      if (questions) {
+        if (questions.groupId !== questions.turnId) throw new HttpError(400, "Invalid question group");
+        const [origin] = await tx.select().from(conversationTurns).where(and(eq(conversationTurns.id, questions.turnId), eq(conversationTurns.sessionId, reviewId), eq(conversationTurns.userId, userId), eq(conversationTurns.status, "completed")));
+        if (!origin) throw new HttpError(400, "Unknown question group");
+        const [answered] = await tx.select().from(conversationTurns).where(and(eq(conversationTurns.sessionId, reviewId), sql`${conversationTurns.answers}->>'groupId' = ${questions.groupId}`));
+        if (answered && answered.id !== turnId) throw new HttpError(409, "Question group already answered");
+        const result = trustedQuestionAnswers(questions, (origin.result as ReviewTurnResponse).questions);
+        trustedContent = [content, result.content].filter(Boolean).join("\n\n");
+        for (const issueId of result.skippedIssueIds) await tx.update(reviewIssues).set({ status: "skipped" }).where(and(eq(reviewIssues.id, issueId), eq(reviewIssues.sessionId, reviewId)));
+      }
+      if (existing) await tx.update(conversationTurns).set({ status: "running", updatedAt: new Date() }).where(eq(conversationTurns.id, turnId));
+      else await tx.insert(conversationTurns).values({ id: turnId, userId, sessionId: reviewId, content, answers: questions ?? null });
+      return { status: "claimed", content: trustedContent };
+    });
+  }
+
+  async failTurn(turnId: string, userId: string) {
+    await this.db.update(conversationTurns).set({ status: "failed", updatedAt: new Date() }).where(and(eq(conversationTurns.id, turnId), eq(conversationTurns.userId, userId), eq(conversationTurns.status, "running")));
   }
 
   async getEditForUser(editId: string, userId: string) {

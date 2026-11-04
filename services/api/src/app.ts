@@ -1,10 +1,14 @@
 import cors from "@fastify/cors";
-import Fastify, { type FastifyRequest } from "fastify";
+import Fastify, { type FastifyRequest, type FastifyReply } from "fastify";
+import { PassThrough } from "node:stream";
 import { z } from "zod";
-import { disciplines, type Principal } from "./domain.js";
+import { disciplines, type Principal, type ReviewSession, type ReviewTurnResponse } from "./domain.js";
+import type { ReviewStreamEvent } from "../../../packages/reviewer/src/conversation.js";
 import { HttpError } from "./errors.js";
 import type { createStripePayments } from "./stripe.js";
 import type { Authenticator, Compiler, Repository, ReviewEngine } from "./ports.js";
+
+type StreamPayload<T> = T extends unknown ? Omit<T, "turnId" | "eventId"> : never;
 
 const IdParams = z.object({ id: z.string().uuid() });
 const Source = z.string().min(1).max(1_048_576);
@@ -18,9 +22,10 @@ const ProjectInput = z.object({
   if (!source) { context.addIssue({ code: "custom", message: "source is required" }); return z.NEVER; }
   return { title: value.title, discipline: value.discipline, source };
 });
-const ProjectPatch = z.object({ title: z.string().trim().min(1).max(200).optional(), discipline: z.enum(disciplines).optional(), source: Source.optional() }).refine((value) => Object.keys(value).length > 0);
-const ReviewInput = z.object({ rubricVersion: z.string().min(1).max(100).default("v1"), model: z.string().min(1).max(100).default("configured") });
-const MessageInput = z.object({ content: z.string().trim().min(1).max(20_000) });
+const ProjectPatch = z.object({ title: z.string().trim().min(1).max(200).optional(), discipline: z.enum(disciplines).optional(), source: Source.optional(), version: z.object({ id: z.string().uuid(), reason: z.string().max(500), kind: z.enum(["autosave", "checkpoint", "upload", "edit", "restore"]), restoredFromId: z.string().uuid().optional(), createdAt: z.string().datetime().optional() }).optional() }).refine((value) => Object.keys(value).length > 0);
+const QuestionInput = z.object({ turnId: z.string().uuid(), groupId: z.string().uuid(), answers: z.array(z.object({ questionId: z.string().min(1), state: z.enum(["answered", "skipped", "unanswered"]), answer: z.string().max(20_000) })).max(30) });
+const ReviewInput = z.object({ rubricVersion: z.string().min(1).max(100).default("v1"), model: z.string().min(1).max(100).default("configured"), turnId: z.string().uuid().optional(), content: z.string().trim().max(20_000).default("Review this resume") });
+const MessageInput = z.object({ content: z.string().trim().max(20_000).default(""), turnId: z.string().uuid().optional(), questions: QuestionInput.optional() }).refine((value) => value.content || value.questions, "A message or question answers are required");
 
 export interface AppDependencies {
   repository: Repository;
@@ -52,6 +57,41 @@ export async function createApp(deps: AppDependencies) {
 
   app.get("/health", async () => ({ ok: true }));
 
+  async function streamTurn(request: FastifyRequest, reply: FastifyReply, user: Principal, session: ReviewSession, turnId: string, content: string, questions?: z.infer<typeof QuestionInput>) {
+    const claim = await deps.repository.claimTurn(session.id, user.userId, turnId, content, questions);
+    if (claim.status === "busy") throw new HttpError(409, "A review response is already running");
+    const stream = new PassThrough();
+    const controller = new AbortController();
+    let sequence = 0;
+    const emit = (event: StreamPayload<ReviewStreamEvent<ReviewTurnResponse & { id: string }>>) => {
+      if (!controller.signal.aborted) stream.write(`${JSON.stringify({ ...event, turnId, eventId: `${turnId}:${sequence++}` })}\n`);
+    };
+    reply.raw.on("close", () => { if (!reply.raw.writableEnded) controller.abort(); });
+    request.raw.on("aborted", () => controller.abort());
+    reply.header("Content-Type", "application/x-ndjson; charset=utf-8").header("Cache-Control", "no-cache, no-transform");
+    reply.send(stream);
+    void (async () => {
+      try {
+        emit({ type: "turn_start", reviewId: session.id });
+        let saved = claim.turn;
+        if (claim.status === "claimed") {
+          if (!await deps.repository.addReviewMessage(session.id, user.userId, claim.content, turnId)) throw new HttpError(429, "Review turn limit reached");
+          const turn = await deps.reviewer.runTurn({ session, content: claim.content, userId: user.userId, messageId: turnId, ...(questions ? { userFactsText: [content, ...questions.answers.filter((answer) => answer.state === "answered").map((answer) => answer.answer)].join("\n") } : {}), onTextDelta: (delta) => emit({ type: "text_delta", delta }), signal: controller.signal });
+          controller.signal.throwIfAborted();
+          saved = await deps.repository.saveReviewTurn(session.id, user.userId, turn, turnId) ?? undefined;
+        }
+        if (!saved) throw new Error("Review could not be saved");
+        if (saved.questions.length) emit({ type: "question_group", groupId: turnId, questions: saved.questions });
+        emit({ type: "turn_final", turn: { id: session.id, ...saved } });
+      } catch (error) {
+        app.log.error(error);
+        await deps.repository.failTurn(turnId, user.userId).catch((failure) => app.log.error(failure));
+        emit({ type: "error", message: "The review connection was interrupted. Try sending your message again." });
+      } finally { stream.end(); }
+    })();
+    return reply;
+  }
+
   app.post("/api/compile", async (request, reply) => {
     const { source } = z.object({ source: Source }).parse(request.body);
     const result = await deps.compiler.compile(source);
@@ -80,6 +120,14 @@ export async function createApp(deps: AppDependencies) {
     return value;
   });
 
+  app.get("/api/projects/:id/versions", async (request) => {
+    const user = await principal(request, deps.authenticator);
+    const { id } = IdParams.parse(request.params);
+    const values = await deps.repository.listVersions(id, user.userId);
+    if (!values) throw new HttpError(404, "Project not found");
+    return values;
+  });
+
   app.delete("/api/projects/:id", async (request, reply) => {
     const user = await principal(request, deps.authenticator);
     const { id } = IdParams.parse(request.params);
@@ -100,11 +148,15 @@ export async function createApp(deps: AppDependencies) {
     const user = await principal(request, deps.authenticator);
     const { id } = IdParams.parse(request.params);
     const input = ReviewInput.parse(request.body ?? {});
+    const streaming = request.headers.accept?.includes("application/x-ndjson");
+    if (streaming && !input.turnId) throw new HttpError(400, "A turn ID is required");
+    const args = [id, user.userId, input.rubricVersion, input.model] as const;
     const value = deps.requireReviewEntitlement === false
-      ? await deps.repository.createReview(id, user.userId, input.rubricVersion, input.model)
-      : await deps.repository.createEntitledReview(id, user.userId, input.rubricVersion, input.model);
+      ? await deps.repository.createReview(...args, ...(input.turnId ? [input.turnId] : []))
+      : await deps.repository.createEntitledReview(...args, ...(input.turnId ? [input.turnId] : []));
     if (!value) throw new HttpError(404, "Project not found");
     if (value === "payment_required") throw new HttpError(402, "A review entitlement is required");
+    if (streaming) return streamTurn(request, reply, user, value, input.turnId!, input.content);
     const turn = await deps.reviewer.runTurn({ session: value, content: "", userId: user.userId });
     const saved = await deps.repository.saveReviewTurn(value.id, user.userId, turn);
     if (!saved) throw new HttpError(404, "Review not found");
@@ -116,26 +168,24 @@ export async function createApp(deps: AppDependencies) {
     const { id } = IdParams.parse(request.params);
     const value = await deps.repository.getReviewForUser(id, user.userId);
     if (!value) throw new HttpError(404, "Review not found");
-    return { id: value.id, state: value.state, message: "", issues: [], questions: [], edits: [] };
+    return { id: value.id, state: value.state, message: "", issues: [], questions: [], edits: [], messages: await deps.repository.getConversation(id, user.userId) };
   });
 
   app.post("/api/reviews/:id/messages", async (request, reply) => {
     const user = await principal(request, deps.authenticator);
     const { id } = IdParams.parse(request.params);
-    const { content } = MessageInput.parse(request.body);
+    const { content, turnId, questions } = MessageInput.parse(request.body);
     const session = await deps.repository.getReviewForUser(id, user.userId);
     if (!session) throw new HttpError(404, "Review not found");
+    if (request.headers.accept?.includes("application/x-ndjson")) {
+      if (!turnId) throw new HttpError(400, "A turn ID is required");
+      return streamTurn(request, reply, user, session, turnId, content, questions);
+    }
+    if (questions) throw new HttpError(400, "Question answers require the streaming protocol");
     if (!await deps.repository.addReviewMessage(id, user.userId, content)) throw new HttpError(429, "Review turn limit reached");
     const turn = await deps.reviewer.runTurn({ session, content, userId: user.userId });
     const saved = await deps.repository.saveReviewTurn(id, user.userId, turn);
     if (!saved) throw new HttpError(404, "Review not found");
-    if (request.headers.accept?.includes("text/event-stream")) {
-      reply.raw.writeHead(200, { "content-type": "text/event-stream; charset=utf-8", "cache-control": "no-cache, no-transform", connection: "keep-alive" });
-      reply.raw.write(`data: ${JSON.stringify({ chunk: saved.message })}\n\n`);
-      reply.raw.write(`event: turn\ndata: ${JSON.stringify(saved)}\n\n`);
-      reply.raw.write("event: done\ndata: {}\n\n");
-      return reply.raw.end();
-    }
     return { id: session.id, ...saved };
   });
 

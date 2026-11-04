@@ -19,7 +19,7 @@ export type TurnValidationResult = { valid: true } | { valid: false; errors: str
 export function validateReviewTurn(turn: ReviewTurn, context: TurnValidationContext): TurnValidationResult {
   const errors: string[] = [];
   const facts = [...context.existingFacts, ...turn.facts];
-  const issues = [...context.existingIssues, ...turn.issues];
+  const issues = [...new Map([...context.existingIssues, ...turn.issues].map((issue) => [issue.id, issue])).values()];
   const issueIds = new Set(issues.map((issue) => issue.id));
 
   const factValidation = validateNewFacts(turn.facts, context.allowedSourceIds);

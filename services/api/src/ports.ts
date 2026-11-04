@@ -11,6 +11,7 @@ import type {
   ReviewContextSnapshot,
   ReviewTurnResponse,
 } from "./domain.js";
+import type { WorkspaceVersion, QuestionSubmission, ConversationMessage } from "../../../packages/reviewer/src/conversation.js";
 
 export interface Authenticator {
   authenticate(token: string): Promise<Principal | null>;
@@ -19,17 +20,21 @@ export interface Authenticator {
 export interface Repository {
   createProject(input: { userId: string; title: string; discipline: Discipline; source: string }): Promise<ResumeProject>;
   getProjectForUser(projectId: string, userId: string): Promise<ResumeProject | null>;
-  updateProject(projectId: string, userId: string, patch: { title?: string; discipline?: Discipline; source?: string }): Promise<ResumeProject | null>;
+  updateProject(projectId: string, userId: string, patch: { title?: string; discipline?: Discipline; source?: string; version?: Pick<WorkspaceVersion, "id" | "reason" | "kind"> & { restoredFromId?: string; createdAt?: string } }): Promise<ResumeProject | null>;
+  listVersions(projectId: string, userId: string): Promise<WorkspaceVersion[] | null>;
   deleteProject(projectId: string, userId: string): Promise<boolean>;
   createInitialVersion(project: ResumeProject): Promise<ResumeVersion>;
   getVersionForUser(versionId: string, userId: string): Promise<ResumeVersion | null>;
   restoreVersion(versionId: string, userId: string): Promise<ResumeVersion | null>;
-  createReview(projectId: string, userId: string, rubricVersion: string, model: string): Promise<ReviewSession | null>;
-  createEntitledReview(projectId: string, userId: string, rubricVersion: string, model: string): Promise<ReviewSession | "payment_required" | null>;
+  createReview(projectId: string, userId: string, rubricVersion: string, model: string, turnId?: string): Promise<ReviewSession | null>;
+  createEntitledReview(projectId: string, userId: string, rubricVersion: string, model: string, turnId?: string): Promise<ReviewSession | "payment_required" | null>;
   getReviewForUser(reviewId: string, userId: string): Promise<ReviewSession | null>;
   getReviewContext(reviewId: string, userId: string): Promise<ReviewContextSnapshot | null>;
-  saveReviewTurn(reviewId: string, userId: string, turn: ReviewTurnResponse): Promise<ReviewTurnResponse | null>;
-  addReviewMessage(reviewId: string, userId: string, content: string): Promise<boolean>;
+  getConversation(reviewId: string, userId: string): Promise<ConversationMessage[] | null>;
+  saveReviewTurn(reviewId: string, userId: string, turn: ReviewTurnResponse, turnId?: string): Promise<ReviewTurnResponse | null>;
+  addReviewMessage(reviewId: string, userId: string, content: string, turnId?: string): Promise<boolean>;
+  claimTurn(reviewId: string, userId: string, turnId: string, content: string, questions?: QuestionSubmission): Promise<{ status: "claimed" | "busy" | "completed"; turn?: ReviewTurnResponse; content: string }>;
+  failTurn(turnId: string, userId: string): Promise<void>;
   getEditForUser(editId: string, userId: string): Promise<ProposedEdit | null>;
   rejectEdit(editId: string, userId: string): Promise<boolean>;
   acceptEdit(editId: string, userId: string, compile: (source: string) => Promise<CompileResult>): Promise<ResumeVersion | "stale" | "compile_failed" | null>;
@@ -43,5 +48,5 @@ export interface Compiler {
 }
 
 export interface ReviewEngine {
-  runTurn(input: { session: ReviewSession; content: string; userId: string }): Promise<ReviewTurnResponse>;
+  runTurn(input: { session: ReviewSession; content: string; userId: string; messageId?: string; userFactsText?: string; onTextDelta?: (delta: string) => void; signal?: AbortSignal }): Promise<ReviewTurnResponse>;
 }

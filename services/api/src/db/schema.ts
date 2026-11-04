@@ -34,6 +34,7 @@ export const versions = pgTable("resume_versions", {
   latexSource: text("latex_source").notNull(),
   createdBy: versionCreatorEnum("created_by").notNull(),
   reason: text("reason").notNull(),
+  metadata: jsonb("metadata").$type<{ filename?: string; discipline?: "software" | "mechanical"; kind?: string; restoredFromId?: string }>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -52,7 +53,20 @@ export const reviewMessages = pgTable("review_messages", {
   sessionId: uuid("session_id").notNull(),
   role: messageRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  turnId: uuid("turn_id"),
+  parts: jsonb("parts").notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const conversationTurns = pgTable("conversation_turns", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("user_id").notNull(),
+  sessionId: uuid("session_id").notNull(),
+  content: text("content").notNull(),
+  answers: jsonb("answers"),
+  status: text("status").notNull().default("running"),
+  result: jsonb("result"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const resumeFacts = pgTable("resume_facts", {
