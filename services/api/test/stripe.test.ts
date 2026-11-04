@@ -19,7 +19,7 @@ const payments = createStripePayments("sk_test_example", "whsec_test", "price_re
 const sdk = new Stripe("sk_test_example");
 const session = {
   id: "cs_review", mode: "payment", payment_status: "paid", amount_total: 100, currency: "usd",
-  client_reference_id: user.userId, metadata: { userId: user.userId, purpose: "draftwise_review" },
+  client_reference_id: user.userId, metadata: { userId: user.userId, purpose: "aria_review" },
   customer_details: { email: "different@example.com" },
 };
 
@@ -40,7 +40,7 @@ describe("Stripe review payments", () => {
     await expect(payments.checkout(user)).resolves.toEqual({ url: "https://checkout.stripe.com/test" });
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
       line_items: [{ price: "price_review", quantity: 1 }], client_reference_id: user.userId,
-      metadata: { userId: user.userId, purpose: "draftwise_review" },
+      metadata: { userId: user.userId, purpose: "aria_review" },
     }));
   });
 
@@ -57,6 +57,7 @@ describe("Stripe review payments", () => {
 
   it("accepts higher amounts and delayed successful payments", () => {
     expect(webhook({ ...session, amount_total: 1250 }, "checkout.session.async_payment_succeeded")()).toMatchObject({ amount: "12.50" });
+    expect(webhook({ ...session, metadata: { ...session.metadata, purpose: "draftwise_review" } })()).toMatchObject({ userId: user.userId });
   });
 
   it("ignores unpaid sessions and unrelated events or checkouts", () => {

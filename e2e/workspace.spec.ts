@@ -24,7 +24,7 @@ test("imports, edits, checkpoints, and downloads a LaTeX resume", async ({ page 
 
 test("switches the workspace panes on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.addInitScript(() => localStorage.setItem("draftwise:resume-source", "\\documentclass{article}\\begin{document}Hi\\end{document}"));
+  await page.addInitScript(() => localStorage.setItem("aria:resume-source", "\\documentclass{article}\\begin{document}Hi\\end{document}"));
   await page.goto("/");
   await page.getByRole("tab", { name: "preview" }).click();
   await expect(page.getByRole("tabpanel", { name: "preview" })).toBeVisible();

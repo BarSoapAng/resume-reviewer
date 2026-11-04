@@ -1,6 +1,6 @@
 # Architecture
 
-Draftwise separates trusted application code from hostile LaTeX execution.
+Aria separates trusted application code from hostile LaTeX execution.
 
 ```text
 Browser -> Application API -> Supabase

@@ -122,9 +122,9 @@ function toDisplayIssues(issues: ReviewIssue[], questions: Array<{ issueIds: str
 
 function App() {
   const [source, setSource] = useState(
-    () => window.localStorage.getItem("draftwise:resume-source") ?? initialLatex,
+    () => window.localStorage.getItem("aria:resume-source") ?? window.localStorage.getItem("draftwise:resume-source") ?? initialLatex,
   );
-  const [showLanding, setShowLanding] = useState(() => !window.localStorage.getItem("draftwise:resume-source"));
+  const [showLanding, setShowLanding] = useState(() => !(window.localStorage.getItem("aria:resume-source") ?? window.localStorage.getItem("draftwise:resume-source")));
   const [landingSource, setLandingSource] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("review");
   const [reviewOpen, setReviewOpen] = useState(true);
@@ -153,7 +153,7 @@ function App() {
   const [userEmail, setUserEmail] = useState<string>();
   const [versions, setVersions] = useState<LocalVersion[]>(() => {
     try {
-      return JSON.parse(window.localStorage.getItem("draftwise:resume-versions") ?? "[]") as LocalVersion[];
+      return JSON.parse(window.localStorage.getItem("aria:resume-versions") ?? window.localStorage.getItem("draftwise:resume-versions") ?? "[]") as LocalVersion[];
     } catch {
       return [];
     }
@@ -180,14 +180,14 @@ function App() {
   useEffect(() => {
     if (showLanding) return;
     const saveTimer = window.setTimeout(() => {
-      window.localStorage.setItem("draftwise:resume-source", source);
+      window.localStorage.setItem("aria:resume-source", source);
     }, 500);
 
     return () => window.clearTimeout(saveTimer);
   }, [showLanding, source]);
 
   useEffect(() => {
-    window.localStorage.setItem("draftwise:resume-versions", JSON.stringify(versions.slice(0, 20)));
+    window.localStorage.setItem("aria:resume-versions", JSON.stringify(versions.slice(0, 20)));
   }, [versions]);
 
   useEffect(() => {
@@ -379,7 +379,7 @@ function App() {
     return (
       <LandingShell>
         <LandingNav>
-          <Brand><BrandMark><Icon name="sparkles" size={17} /></BrandMark><BrandName>draftwise</BrandName></Brand>
+          <Brand><BrandMark><Icon name="sparkles" size={17} /></BrandMark><BrandName>Aria</BrandName></Brand>
           <LandingNote>Open source · No account needed to compile</LandingNote>
         </LandingNav>
         <LandingMain>
@@ -411,7 +411,7 @@ function App() {
       <Header>
         <Brand>
           <BrandMark><Icon name="sparkles" size={17} /></BrandMark>
-          <BrandName>draftwise</BrandName>
+          <BrandName>Aria</BrandName>
         </Brand>
         <DocumentMeta>
           <DocumentTitle>{isDemoResume ? "Alex Morgan — Software Resume" : "Uploaded resume"}</DocumentTitle>
@@ -504,7 +504,7 @@ function App() {
                     <ReviewerIntro>
                       <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
                       <div>
-                        <ReviewerName>Draftwise reviewer</ReviewerName>
+                        <ReviewerName>Aria reviewer</ReviewerName>
                         <ReviewerCopy>
                           I found {unresolvedCount} {unresolvedCount === 1 ? "area" : "areas"} worth strengthening. I’ll ask before adding any facts.
                         </ReviewerCopy>

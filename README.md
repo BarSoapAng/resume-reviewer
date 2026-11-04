@@ -1,6 +1,6 @@
-# Draftwise
+# Aria
 
-Draftwise is an open-source technical resume reviewer for software and mechanical engineering students. It compiles an existing one-file LaTeX resume, identifies rubric-backed issues, asks for missing evidence, and proposes edits that can only use facts from the resume or the user's verified answers.
+Aria is an open-source technical resume reviewer for software and mechanical engineering students. It compiles an existing one-file LaTeX resume, identifies rubric-backed issues, asks for missing evidence, and proposes edits that can only use facts from the resume or the user's verified answers.
 
 ## What is implemented
 
@@ -102,7 +102,7 @@ The E2E command starts the Vite dev server through Playwright. Install its Chrom
 
 ## Safety invariant
 
-Every AI-produced factual claim must trace to the original resume or an explicit user statement. If the evidence is missing, Draftwise asks; it does not guess.
+Every AI-produced factual claim must trace to the original resume or an explicit user statement. If the evidence is missing, Aria asks; it does not guess.
 
 See [the implementation plan](./Technical%20Resume%20Reviewer_%20Final%20Product%20and%20Implementation%20Plan.md) and [architecture notes](./docs/architecture.md) for product and deployment details.
 

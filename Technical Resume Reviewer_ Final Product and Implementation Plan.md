@@ -1,4 +1,4 @@
-# Technical Resume Reviewer
+# Aria: Technical Resume Reviewer
 
 ## 1. Product objective
 
@@ -1391,7 +1391,7 @@ Use SSE/streaming for AI text responses.
 For the current frontend milestone, keep the template's simple root layout:
 
 ```text
-resume-reviewer/
+aria/
 ├── src/
 │   ├── components/
 │   ├── lib/
@@ -1405,7 +1405,7 @@ resume-reviewer/
 When backend packages are introduced, migrate toward the following service-oriented structure. Do not add empty workspace directories before they are needed.
 
 ```text
-resume-reviewer/
+aria/
 │
 ├── apps/
 │   └── web/
