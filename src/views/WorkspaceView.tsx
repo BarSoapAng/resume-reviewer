@@ -16,7 +16,7 @@ export function WorkspaceView({ model }: { model: WorkspaceModel }) {
   const [visible, setVisible] = useState({ review: true, source: true, preview: true });
   const group = useRef<ImperativePanelGroupHandle>(null);
   const panels = [
-    { id: "review", label: "Ario", icon: "message" },
+    { id: "review", label: "Aria", icon: "message" },
     { id: "source", label: "Source", icon: "code" },
     { id: "preview", label: "Preview", icon: "preview" },
   ] as const;

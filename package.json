@@ -23,6 +23,7 @@
     "openai": "^6.49.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-icons": "^5.7.0",
     "react-resizable-panels": "^2.1.9",
     "styled-components": "^6.1.19",
     "yaml": "^2.9.1",
