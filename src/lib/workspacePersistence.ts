@@ -22,10 +22,11 @@ export class WorkspaceSaver {
   private timer?: ReturnType<typeof setTimeout>;
   private queue: Promise<void> = Promise.resolve();
   private revision = 0;
+  private generation = 0;
   private saved = "";
   private savedState: SaveState = "local";
   private writing = false;
-  constructor(private persist: (snapshot: DocumentSnapshot) => Promise<boolean>, private status: (state: SaveState) => void) {}
+  constructor(private persist: (snapshot: DocumentSnapshot, version?: WorkspaceVersion) => Promise<boolean>, private status: (state: SaveState) => void) {}
   schedule(snapshot: DocumentSnapshot) {
     clearTimeout(this.timer);
     const revision = ++this.revision;
@@ -33,15 +34,20 @@ export class WorkspaceSaver {
     this.status("pending");
     this.timer = setTimeout(() => { void this.flush(snapshot, revision).catch(() => undefined); }, 5000);
   }
-  flush(snapshot: DocumentSnapshot, revision = this.revision, required = false): Promise<void> {
+  flush(snapshot: DocumentSnapshot, revision = this.revision, required = false, version?: WorkspaceVersion): Promise<void> {
     clearTimeout(this.timer);
+    const generation = this.generation;
     const task = this.queue.catch(() => undefined).then(async () => {
+      if (generation !== this.generation) return;
       if (!required && revision !== this.revision) return;
-      if (JSON.stringify(snapshot) === this.saved) return;
+      if (!version && JSON.stringify(snapshot) === this.saved) {
+        if (revision === this.revision) this.status(this.savedState);
+        return;
+      }
       this.status("saving");
       this.writing = true;
       try {
-        const hosted = await this.persist(snapshot);
+        const hosted = await this.persist(snapshot, version);
         this.saved = JSON.stringify(snapshot);
         this.savedState = hosted ? "saved" : "local";
         if (revision === this.revision) this.status(this.savedState);
@@ -53,6 +59,6 @@ export class WorkspaceSaver {
     this.queue = task;
     return task;
   }
-  cancel() { clearTimeout(this.timer); ++this.revision; this.saved = ""; }
+  cancel() { clearTimeout(this.timer); ++this.revision; ++this.generation; this.saved = ""; }
   invalidate() { this.saved = ""; }
 }

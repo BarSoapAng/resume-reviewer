@@ -72,7 +72,7 @@ export async function readReviewStream(response: Response, onEvent: (event: Revi
   if (!response.body) throw new Error("The review connection was interrupted. Try sending your message again.");
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = "", finalized = false;
+  let buffer = "", finalized = false, started = false;
   const seen = new Set<string>();
   let turnId: string | undefined;
   const consume = (line: string) => {
@@ -82,6 +82,8 @@ export async function readReviewStream(response: Response, onEvent: (event: Revi
     turnId = event.turnId;
     if (seen.has(event.eventId)) return;
     seen.add(event.eventId);
+    if ((!started && event.type !== "turn_start") || (started && event.type === "turn_start")) throw new Error("Invalid review stream order");
+    started = true;
     if (event.type === "error") throw new Error("The review connection was interrupted. Try sending your message again.");
     if (finalized) throw new Error("Invalid review stream order");
     if (event.type === "turn_final") finalized = true;
@@ -131,6 +133,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    if (path === "/api/compile" && response.status === 422) {
+      const result = await response.json() as CompileResult;
+      if (Array.isArray(result.diagnostics)) return { diagnostics: result.diagnostics.filter((item) => typeof item.message === "string").map((item) => ({ ...item, severity: "error" })) } as T;
+    }
     throw new ApiError(response.status, safeApiMessage(response.status));
   }
 
@@ -138,10 +144,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function compileLatex(source: string): Promise<CompileResult> {
-  return request<CompileResult>("/api/compile", {
+  const result = await request<CompileResult>("/api/compile", {
     method: "POST",
     body: JSON.stringify({ source }),
   });
+  return { ...result, diagnostics: (result.diagnostics ?? []).map((item) => ({ ...item, severity: item.severity ?? "warning" })) };
 }
 
 export async function createProject(title: string, discipline: Discipline, source: string) {

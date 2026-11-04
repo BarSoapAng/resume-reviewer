@@ -14,4 +14,5 @@ it("rejects interrupted streams and mismatched turn IDs", async () => {
   await expect(readReviewStream(new Response('{"type":"turn_start","turnId":"t","eventId":"1","reviewId":"r"}\n'), () => undefined)).rejects.toThrow("interrupted");
   const body = [{ type: "turn_start", turnId: "t", eventId: "1" }, { type: "turn_final", turnId: "other", eventId: "2" }].map((v) => JSON.stringify(v)).join("\n");
   await expect(readReviewStream(new Response(body), () => undefined)).rejects.toThrow("Invalid review stream");
+  await expect(readReviewStream(new Response('{"type":"text_delta","turnId":"t","eventId":"1","delta":"early"}\n'), () => undefined)).rejects.toThrow("order");
 });

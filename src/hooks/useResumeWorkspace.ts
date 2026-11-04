@@ -90,12 +90,13 @@ export function useResumeWorkspace() {
   useLayoutEffect(() => { latest.current = { documentId, source, filename, discipline, projectId, versions }; });
   // The persistence callback reads this ref only when a queued save runs.
   // eslint-disable-next-line react-hooks/refs
-  const [saver] = useState(() => new WorkspaceSaver(async (snapshot) => {
+  const [saver] = useState(() => new WorkspaceSaver(async (snapshot, requestedVersion) => {
     const current = latest.current;
+    if (current.documentId !== snapshot.documentId) return false;
     const existing = current.versions[0];
     const unchanged = existing && existing.source === snapshot.source && existing.filename === snapshot.filename && existing.discipline === snapshot.discipline;
-    const version: WorkspaceVersion = unchanged ? existing : { ...snapshot, id: crypto.randomUUID(), createdAt: new Date().toISOString(), reason: "Autosaved", kind: "autosave" };
-    const history = retainVersions(unchanged ? current.versions : [version, ...current.versions]);
+    const version: WorkspaceVersion = requestedVersion ?? (unchanged ? existing : { ...snapshot, id: crypto.randomUUID(), createdAt: new Date().toISOString(), reason: "Autosaved", kind: "autosave" });
+    const history = retainVersions(current.versions.some((item) => item.id === version.id) ? current.versions : [version, ...current.versions]);
     localStorage.setItem("aria:workspace", JSON.stringify(snapshot));
     localStorage.setItem(`aria:versions:${snapshot.documentId}`, JSON.stringify(history));
     if (current.projectId) await updateProject(current.projectId, { source: snapshot.source, title: snapshot.filename, discipline: snapshot.discipline, version });
@@ -246,7 +247,7 @@ export function useResumeWorkspace() {
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement("a"); link.href = url; link.download = downloadFilename(filename, true); link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch { setReviewError("We couldn?t download this PDF. Please try again."); }
+    } catch { setReviewError("We could not download this PDF. Please try again."); }
   };
   const createCheckpoint = (reason = "Manual checkpoint", checkpointSource = source, kind: WorkspaceVersion["kind"] = "checkpoint", restoredFromId?: string) => {
     const version: WorkspaceVersion = { documentId, source: checkpointSource, filename, discipline, id: crypto.randomUUID(), createdAt: new Date().toISOString(), reason, kind, restoredFromId };
@@ -255,7 +256,7 @@ export function useResumeWorkspace() {
     try { localStorage.setItem(`aria:versions:${documentId}`, JSON.stringify(history)); } catch { setSaveState("failed"); }
     if (projectId) {
       saver.invalidate();
-      void saver.flush({ documentId, source: checkpointSource, filename, discipline }, undefined, true).catch(() => undefined);
+      void saver.flush({ documentId, source: checkpointSource, filename, discipline }, undefined, true, version).catch(() => undefined);
     }
   };
   const restoreVersion = (version: WorkspaceVersion) => {
@@ -266,6 +267,7 @@ export function useResumeWorkspace() {
     latest.current.versions = history;
     setVersions(history);
     saver.invalidate();
+    void saver.flush({ documentId, source: restored.source, filename: restored.filename, discipline: restored.discipline }, undefined, true, restored).catch(() => undefined);
     setSource(version.source); setFilename(version.filename); setDiscipline(version.discipline);
     setIsDemoResume(false); setHistoryOpen(false);
   };
@@ -306,7 +308,7 @@ export function useResumeWorkspace() {
         await compile(result.source);
       }
     } catch {
-      setReviewError("We couldn?t update this edit. Please try again.");
+      setReviewError("We could not update this edit. Please try again.");
     }
   };
 
