@@ -20,18 +20,21 @@ RUN printf '%s\n' \
       'Acquire::Retries "2";' > /etc/apt/apt.conf.d/99network \
     && apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl \
-    && case "$TARGETARCH" in \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN case "$TARGETARCH" in \
          amd64) TECTONIC_ARCH=x86_64; TECTONIC_SHA256=dfb82876f2986862996e564fa507a9e576e0c1e3bee63c2c1bd677c2543e6407 ;; \
          arm64) TECTONIC_ARCH=aarch64; TECTONIC_SHA256=1f59f9fb8eb65e8ba18658fc9016767e7d3e12488ded8b8fffa34254e51ce42c ;; \
          *) echo "Unsupported architecture: $TARGETARCH" >&2; exit 1 ;; \
        esac \
-    && curl --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+    && curl --ipv4 --http1.1 --proto '=https' --tlsv1.2 --fail --silent --show-error --location \
+      --retry 3 --retry-all-errors --connect-timeout 20 --max-time 180 \
       "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-${TECTONIC_ARCH}-unknown-linux-musl.tar.gz" \
       --output /tmp/tectonic.tar.gz \
     && echo "${TECTONIC_SHA256}  /tmp/tectonic.tar.gz" | sha256sum --check --strict \
     && tar -xzf /tmp/tectonic.tar.gz -C /usr/local/bin tectonic \
     && chmod 0755 /usr/local/bin/tectonic \
-    && rm -rf /var/lib/apt/lists/* /tmp/tectonic.tar.gz
+    && rm -f /tmp/tectonic.tar.gz
 
 COPY assets/warmup.tex /tmp/warmup.tex
 RUN mkdir -p /opt/tectonic-cache /tmp/tectonic-config \
