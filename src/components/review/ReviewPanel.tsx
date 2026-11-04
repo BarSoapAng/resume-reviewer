@@ -13,7 +13,7 @@ import type { ConversationMessage, ConversationPart, QuestionResponse, QuestionS
 type QuestionPart = Extract<ConversationPart, { type: "questions" }>;
 
 export function ReviewPanel({ model }: { model: Pick<WorkspaceModel,
-  "activeTab" | "beginReview" | "checkoutPending" | "openCheckout" | "edits" | "message" | "messages" | "paymentRequired" | "reviewBusy" | "reviewId" | "sendMessage" | "setMessage" | "updateEdit" | "discipline" | "setDiscipline" | "documentId" | "submitQuestions"
+  "activeTab" | "beginReview" | "checkoutPending" | "openCheckout" | "edits" | "message" | "messages" | "paymentRequired" | "reviewBusy" | "reviewId" | "sendMessage" | "setMessage" | "updateEdit" | "discipline" | "setDiscipline" | "documentId" | "submitQuestions" | "issues" | "selectIssue"
 > }) {
   const { messages, reviewBusy } = model;
   const body = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export function ReviewPanel({ model }: { model: Pick<WorkspaceModel,
         {reviewBusy && <ToolActivity role="status">Ario is responding…</ToolActivity>}
         {model.paymentRequired && <Payment><Body>Choose your review payment to continue.</Body><Action disabled={model.checkoutPending} onClick={() => void model.openCheckout()}>{model.checkoutPending ? "Opening checkout…" : "Continue to payment"}</Action><TextButton disabled={reviewBusy} onClick={() => void model.beginReview()}>I’ve paid — check again</TextButton></Payment>}
       </ReviewBody>
-      {activeGroup && <QuestionCard key={`${model.documentId}:${activeGroup.part.groupId}`} message={activeGroup.message} part={activeGroup.part} busy={reviewBusy} submit={model.submitQuestions} />}
+      {activeGroup && <QuestionCard key={`${model.documentId}:${activeGroup.part.groupId}`} message={activeGroup.message} part={activeGroup.part} busy={reviewBusy} submit={model.submitQuestions} sourceModel={model} />}
       <Composer onSubmit={(event) => { event.preventDefault(); void model.sendMessage(); }}>
         <ComposerInput id="review-message" aria-label="Message Ario" placeholder={model.reviewId ? "Message Ario…" : "Review this resume…"} rows={2} value={model.message} onChange={(event) => model.setMessage(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void model.sendMessage(); } }} />
         <Action type="submit" disabled={reviewBusy || (!!model.reviewId && !model.message.trim())} aria-label="Send message">Send</Action>
@@ -57,13 +57,14 @@ function QuestionHistory({ part }: { part: QuestionPart }) {
   })}</History>;
 }
 
-function QuestionCard({ message, part, busy, submit }: { message: ConversationMessage; part: QuestionPart; busy: boolean; submit: (submission: QuestionSubmission) => Promise<void> }) {
+function QuestionCard({ message, part, busy, submit, sourceModel }: { message: ConversationMessage; part: QuestionPart; busy: boolean; submit: (submission: QuestionSubmission) => Promise<void>; sourceModel: Pick<WorkspaceModel, "issues" | "selectIssue"> }) {
   const storageKey = `aria:questions:${message.documentId}:${message.turnId}:${part.groupId}`;
   const [draft, setDraft] = useState<{ index: number; answers: QuestionResponse[] }>(() => {
     try { const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null"); if (saved && Array.isArray(saved.answers)) return { index: Math.min(Math.max(saved.index || 0, 0), part.questions.length - 1), answers: saved.answers }; } catch { /* keep drafts in memory when storage is unavailable */ }
     return { index: 0, answers: [] };
   });
   const question = part.questions[draft.index];
+  const issue = sourceModel.issues.find((item) => question.issueIds.includes(item.id) && item.anchor?.exactText);
   const answer = draft.answers.find((value) => value.questionId === question.id);
   const save = (next: typeof draft) => {
     setDraft(next);
@@ -77,6 +78,7 @@ function QuestionCard({ message, part, busy, submit }: { message: ConversationMe
   return <QuestionBox aria-label="Resume question">
     <QuestionTop><Speaker>Question {draft.index + 1} of {part.questions.length}</Speaker><Severity>{question.priority ?? "medium"}</Severity></QuestionTop>
     <QuestionText as="label" htmlFor={`answer-${part.groupId}`}>{question.text}</QuestionText>
+    {issue && <TextButton onClick={() => sourceModel.selectIssue(issue)}>Locate source</TextButton>}
     <AnswerInput id={`answer-${part.groupId}`} placeholder="Share what you know, or leave this blank" value={answer?.answer ?? ""} onChange={(event) => save({ ...draft, answers: [...draft.answers.filter((value) => value.questionId !== question.id), { questionId: question.id, state: "answered", answer: event.target.value }] })} rows={2} />
     <Actions><TextButton disabled={draft.index === 0 || busy} onClick={() => save({ ...draft, index: draft.index - 1 })}>Previous</TextButton><TextButton disabled={busy} onClick={() => void respond("skipped").catch(() => undefined)}>Skip</TextButton><Action disabled={busy} onClick={() => void respond("answered").catch(() => undefined)}>{draft.index === part.questions.length - 1 ? "Submit answers" : "Answer / Next"}</Action></Actions>
   </QuestionBox>;
