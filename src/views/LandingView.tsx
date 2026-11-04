@@ -37,14 +37,14 @@ export function LandingView({ model }: {
           <ImportTabs>Paste LaTeX or upload a <Code>.tex</Code> file</ImportTabs>
           <ImportTextarea aria-label="LaTeX resume source" onChange={(event) => setLandingSource(event.target.value)} placeholder="\\documentclass{article}\n..." value={landingSource} />
           <ImportActions>
-            <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={spacing[16]} /> Upload .tex</QuietButton>
+            <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={spacing.md} /> Upload .tex</QuietButton>
             <input ref={landingFileInput} accept=".tex,text/plain" hidden onChange={(event) => upload(event.target.files?.[0])} type="file" />
             <PrimaryButton disabled={!landingSource.trim()} onClick={() => {
               setSource(landingSource);
               setIsDemoResume(false);
               createCheckpoint("Initial paste", landingSource);
               setShowLanding(false);
-            }}>Review my resume <Icon name="arrow" size={spacing[16]} /></PrimaryButton>
+            }}>Review my resume <Icon name="arrow" size={spacing.md} /></PrimaryButton>
           </ImportActions>
         </ImportCard>
         <LandingPrivacy>Your source stays in this browser until you choose to sign in and start an AI review.</LandingPrivacy>
@@ -61,61 +61,61 @@ const LandingShell = styled.main`
 
 const LandingNav = styled.header`
   display: flex;
-  height: ${spacing[64]};
+  height: ${spacing["4xl"]};
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${spacing[24]};
-  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  padding: 0 ${spacing.lg};
+  border-bottom: ${spacing.hairline} solid ${colors.paper[300]};
   background: ${colors.paper[100]};
 `;
 
 const LandingNote = styled(Text).attrs({ as: "span" })`
   color: ${colors.paper[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
 
   @media (max-width: ${breakpoints.mobile}) { display: none; }
 `;
 
 const LandingMain = styled.section`
   display: grid;
-  width: min(100% - ${spacing[32]}, ${spacing[768]});
+  width: min(100% - ${spacing.xl}, ${spacing["13xl"]});
   margin: 0 auto;
-  padding: ${spacing[64]} 0;
+  padding: ${spacing["4xl"]} 0;
   justify-items: center;
   text-align: center;
 `;
 
 const LandingEyebrow = styled(Label).attrs({ as: "div" })`
   color: ${colors.forest[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 `;
 
 const LandingTitle = styled(Header).attrs({ as: "h1" })`
-  max-width: ${spacing[640]};
-  margin: ${spacing[16]} 0 ${spacing[12]};
+  max-width: ${spacing["12xl"]};
+  margin: ${spacing.md} 0 ${spacing.sm};
   font-family: ${fonts.heading};
-  font-size: ${fontSize[48]};
+  font-size: ${fontSize.xxl};
 
-  @media (max-width: ${breakpoints.mobile}) { font-size: ${fontSize[36]}; }
+  @media (max-width: ${breakpoints.mobile}) { font-size: ${fontSize.xl}; }
   line-height: 1.04;
   letter-spacing: -0.055em;
 `;
 
 const LandingCopy = styled(Body).attrs({ as: "p" })`
-  max-width: ${spacing[640]};
+  max-width: ${spacing["12xl"]};
   margin: 0;
   color: ${colors.paper[600]};
-  font-size: ${fontSize[18]};
+  font-size: ${fontSize.md};
   line-height: 1.6;
 `;
 
 const ImportTabs = styled(Label).attrs({ as: "div" })`
-  padding: ${spacing[2]} ${spacing[2]} ${spacing[12]};
+  padding: ${spacing.xxxs} ${spacing.xxxs} ${spacing.sm};
   color: ${colors.paper[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 600;
 `;
 
@@ -123,23 +123,23 @@ const ImportActions = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${spacing[12]};
-  padding-top: ${spacing[12]};
+  gap: ${spacing.sm};
+  padding-top: ${spacing.sm};
 `;
 
 const LandingPrivacy = styled(Body).attrs({ as: "p" })`
-  max-width: ${spacing[512]};
-  margin: ${spacing[16]} 0 0;
+  max-width: ${spacing["11xl"]};
+  margin: ${spacing.md} 0 0;
   color: ${colors.paper[600]};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
 `;
 
 const ImportCard = styled(Card)`
-  width: min(100%, ${spacing[640]});
-  margin-top: ${spacing[32]};
-  padding: ${spacing[16]};
-  border: ${spacing[1]} solid ${colors.paper[400]};
-  border-radius: ${radius[16]};
+  width: min(100%, ${spacing["12xl"]});
+  margin-top: ${spacing.xl};
+  padding: ${spacing.md};
+  border: ${spacing.hairline} solid ${colors.paper[400]};
+  border-radius: ${radius.lg};
   background: ${colors.paper[0]};
   box-shadow: ${shadows.soft};
   text-align: left;
@@ -147,14 +147,14 @@ const ImportCard = styled(Card)`
 
 const ImportTextarea = styled(Textarea)`
   width: 100%;
-  min-height: ${spacing[192]};
-  padding: ${spacing[12]};
+  min-height: ${spacing["7xl"]};
+  padding: ${spacing.sm};
   resize: vertical;
-  border: ${spacing[1]} solid ${colors.paper[300]};
-  border-radius: ${radius[8]};
+  border: ${spacing.hairline} solid ${colors.paper[300]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[900]};
   background: ${colors.paper[100]};
   font-family: ${fonts.mono};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   line-height: 1.55;
 `;

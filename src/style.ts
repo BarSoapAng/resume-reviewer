@@ -3,7 +3,7 @@ import { createGlobalStyle } from "styled-components";
 
 export const GlobalStyle = createGlobalStyle`
 :root {
-  font-size: ${fontSize[14]};
+  font-size: ${fontSize.sm};
   line-height: 1.55;
   font-family: ${fonts.body};
   color: ${colors.paper[900]};
@@ -21,7 +21,7 @@ export const GlobalStyle = createGlobalStyle`
 html,
 body,
 #root {
-  min-width: ${spacing[320]};
+  min-width: ${spacing["9xl"]};
   min-height: 100%;
   margin: 0;
 }
@@ -40,7 +40,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: ${spacing[2]} solid ${colors.forest[600]};
-  outline-offset: ${spacing[2]};
+  outline: ${spacing.xxxs} solid ${colors.forest[600]};
+  outline-offset: ${spacing.xxxs};
 }
 `;

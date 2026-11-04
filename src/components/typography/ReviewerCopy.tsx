@@ -4,6 +4,6 @@ import styled from "styled-components";
 export const ReviewerCopy = styled(Body).attrs({ as: "p" })`
   margin: 0;
   color: ${colors.paper[600]};
-  font-size: ${fontSize[14]};
+  font-size: ${fontSize.sm};
   line-height: 1.55;
 `;

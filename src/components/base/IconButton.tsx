@@ -4,12 +4,12 @@ import { Button } from "./Button";
 
 export const IconButton = styled(Button)`
   display: grid;
-  width: ${spacing[32]};
-  height: ${spacing[32]};
+  width: ${spacing.xl};
+  height: ${spacing.xl};
   padding: 0;
   place-items: center;
-  border: ${spacing[1]} solid ${alpha(colors.paper[0], 0)};
-  border-radius: ${radius[8]};
+  border: ${spacing.hairline} solid ${alpha(colors.paper[0], 0)};
+  border-radius: ${radius.sm};
   color: ${colors.paper[600]};
   background: ${alpha(colors.paper[0], 0)};
 

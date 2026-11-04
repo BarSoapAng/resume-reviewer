@@ -47,7 +47,7 @@ export function WorkspaceHeader({ model }: {
         </Discipline>
       </DocumentMeta>
       <HeaderActions>
-        <SavedState><Icon name="check" size={spacing[16]} /> Saved just now</SavedState>
+        <SavedState><Icon name="check" size={spacing.md} /> Saved just now</SavedState>
         <HistoryWrap>
           <IconButton aria-expanded={historyOpen} aria-label="Version history" onClick={() => setHistoryOpen((open) => !open)} title="Version history"><Icon name="history" /></IconButton>
           {historyOpen && (
@@ -75,9 +75,9 @@ const Header = styled.header`
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: ${spacing[24]};
-  padding: 0 ${spacing[24]};
-  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  gap: ${spacing.lg};
+  padding: 0 ${spacing.lg};
+  border-bottom: ${spacing.hairline} solid ${colors.paper[300]};
   background: ${colors.paper[100]};
 
   @media (max-width: ${breakpoints.tablet}) {
@@ -89,11 +89,11 @@ const Header = styled.header`
 const DocumentMeta = styled.div.attrs({ className: "document-meta" })`
   display: flex;
   align-items: center;
-  gap: ${spacing[12]};
+  gap: ${spacing.sm};
 `;
 
 const DocumentTitle = styled(Text).attrs({ as: "span" })`
-  font-size: ${fontSize[14]};
+  font-size: ${fontSize.sm};
   font-weight: 600;
 `;
 
@@ -101,7 +101,7 @@ const HeaderActions = styled.div`
   display: flex;
   align-items: center;
   justify-self: end;
-  gap: ${spacing[8]};
+  gap: ${spacing.xs};
 `;
 
 const HistoryWrap = styled.div`
@@ -111,14 +111,14 @@ const HistoryWrap = styled.div`
 const HistoryPopover = styled.div`
   position: absolute;
   z-index: 20;
-  top: ${spacing[40]};
+  top: ${spacing.xxl};
   right: 0;
-  width: ${spacing[256]};
-  max-height: ${spacing[384]};
-  padding: ${spacing[12]};
+  width: ${spacing["8xl"]};
+  max-height: ${spacing["10xl"]};
+  padding: ${spacing.sm};
   overflow: auto;
-  border: ${spacing[1]} solid ${colors.paper[400]};
-  border-radius: ${radius[12]};
+  border: ${spacing.hairline} solid ${colors.paper[400]};
+  border-radius: ${radius.md};
   background: ${colors.paper[0]};
   box-shadow: ${shadows.soft};
 `;
@@ -127,39 +127,39 @@ const HistoryHeading = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${spacing[4]} ${spacing[4]} ${spacing[8]};
-  font-size: ${fontSize[12]};
+  padding: ${spacing.xxs} ${spacing.xxs} ${spacing.xs};
+  font-size: ${fontSize.xs};
 `;
 
 const HistoryItem = styled(Button)`
   display: grid;
   width: 100%;
-  gap: ${spacing[4]};
-  padding: ${spacing[8]};
+  gap: ${spacing.xxs};
+  padding: ${spacing.xs};
   border: 0;
-  border-radius: ${radius[8]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[900]};
   background: ${alpha(colors.paper[0], 0)};
   text-align: left;
 
   &:hover { background: ${colors.forest[100]}; }
-  strong { font-size: ${fontSize[12]}; }
-  span { color: ${colors.paper[600]}; font-size: ${fontSize[10]}; }
+  strong { font-size: ${fontSize.xs}; }
+  span { color: ${colors.paper[600]}; font-size: ${fontSize.xxs}; }
 `;
 
 const HistoryEmpty = styled(Body).attrs({ as: "p" })`
-  margin: ${spacing[4]};
+  margin: ${spacing.xxs};
   color: ${colors.paper[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
 `;
 
 const SavedState = styled(Text).attrs({ as: "span" })`
   display: flex;
   align-items: center;
-  gap: ${spacing[4]};
-  margin-right: ${spacing[8]};
+  gap: ${spacing.xxs};
+  margin-right: ${spacing.xs};
   color: ${colors.paper[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
 
   svg { color: ${colors.forest[600]}; }
 
@@ -168,24 +168,24 @@ const SavedState = styled(Text).attrs({ as: "span" })`
 
 const Avatar = styled(Button)`
   display: grid;
-  width: ${spacing[32]};
-  height: ${spacing[32]};
-  margin-left: ${spacing[4]};
+  width: ${spacing.xl};
+  height: ${spacing.xl};
+  margin-left: ${spacing.xxs};
   place-items: center;
   border: 0;
   border-radius: ${radius.full};
   color: ${colors.forest[800]};
   background: ${colors.apricot[100]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 700;
 `;
 
 const Discipline = styled(Dropdown)`
-  padding: ${spacing[4]} ${spacing[8]};
-  border: ${spacing[1]} solid ${colors.paper[300]};
-  border-radius: ${radius[8]};
+  padding: ${spacing.xxs} ${spacing.xs};
+  border: ${spacing.hairline} solid ${colors.paper[300]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;

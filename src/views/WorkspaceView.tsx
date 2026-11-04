@@ -75,13 +75,13 @@ export function WorkspaceView({ model }: { model: WorkspaceModel; }) {
 
 const AppShell = styled.main`
   display: grid;
-  grid-template-rows: ${spacing[64]} 1fr ${spacing[48]};
+  grid-template-rows: ${spacing["4xl"]} 1fr ${spacing.xxxl};
   min-height: 100vh;
   background: ${colors.paper[200]};
   color: ${colors.paper[900]};
 
   @media (max-width: ${breakpoints.tablet}) {
-    grid-template-rows: ${spacing[64]} ${spacing[48]} 1fr ${spacing[48]};
+    grid-template-rows: ${spacing["4xl"]} ${spacing.xxxl} 1fr ${spacing.xxxl};
   }
 `;
 
@@ -100,14 +100,14 @@ const Workspace = styled.section`
 
 const ResizeHandle = styled(PanelResizeHandle)`
   position: relative;
-  width: ${spacing[4]};
+  width: ${spacing.xxs};
   background: ${colors.paper[300]};
   transition: background 160ms ease;
 
   &::after {
     position: absolute;
     z-index: 2;
-    inset: 0 -${spacing[4]};
+    inset: 0 -${spacing.xxs};
     content: "";
   }
 
@@ -122,9 +122,9 @@ const MobileTabs = styled.nav`
   @media (max-width: ${breakpoints.tablet}) {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    min-height: ${spacing[48]};
-    padding: 0 ${spacing[12]};
-    border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+    min-height: ${spacing.xxxl};
+    padding: 0 ${spacing.sm};
+    border-bottom: ${spacing.hairline} solid ${colors.paper[300]};
     background: ${colors.paper[0]};
   }
 `;
@@ -134,7 +134,7 @@ const MobileTab = styled(Button) <{ $active: boolean; }>`
   border: 0;
   color: ${({ $active }) => ($active ? colors.forest[800] : colors.paper[600])};
   background: ${alpha(colors.paper[0], 0)};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 700;
   text-transform: capitalize;
 
@@ -143,8 +143,8 @@ const MobileTab = styled(Button) <{ $active: boolean; }>`
     right: 15%;
     bottom: 0;
     left: 15%;
-    height: ${spacing[2]};
-    border-radius: ${radius[2]} ${radius[2]} 0 0;
+    height: ${spacing.xxxs};
+    border-radius: ${radius.xxs} ${radius.xxs} 0 0;
     background: ${({ $active }) => ($active ? colors.forest[600] : alpha(colors.paper[0], 0))};
     content: "";
   }

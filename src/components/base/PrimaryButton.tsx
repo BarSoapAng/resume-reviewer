@@ -4,15 +4,15 @@ import { Button } from "./Button";
 
 export const PrimaryButton = styled(Button)`
   display: inline-flex;
-  height: ${spacing[32]};
+  height: ${spacing.xl};
   align-items: center;
-  gap: ${spacing[8]};
-  padding: 0 ${spacing[12]};
+  gap: ${spacing.xs};
+  padding: 0 ${spacing.sm};
   border: 0;
-  border-radius: ${radius[8]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[0]};
   background: ${colors.forest[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 700;
 
   &:hover { background: ${colors.forest[800]}; }

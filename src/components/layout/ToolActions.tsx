@@ -4,5 +4,5 @@ import styled from "styled-components";
 export const ToolActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${spacing[4]};
+  gap: ${spacing.xxs};
 `;

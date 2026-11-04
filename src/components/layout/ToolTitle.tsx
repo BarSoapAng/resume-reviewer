@@ -4,7 +4,7 @@ import styled from "styled-components";
 export const ToolTitle = styled(Label).attrs({ as: "div" })`
   display: flex;
   align-items: center;
-  gap: ${spacing[8]};
-  font-size: ${fontSize[12]};
+  gap: ${spacing.xs};
+  font-size: ${fontSize.xs};
   font-weight: 700;
 `;

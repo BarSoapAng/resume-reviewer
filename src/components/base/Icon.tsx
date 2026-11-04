@@ -35,7 +35,7 @@ const paths: Record<IconName, React.ReactNode> = {
   upload: <path d="M12 16V4m-4 4 4-4 4 4M5 20h14" />,
 };
 
-export function Icon({ name, size = spacing[16] }: IconProps) {
+export function Icon({ name, size = spacing.md }: IconProps) {
   return (
     <svg
       aria-hidden="true"

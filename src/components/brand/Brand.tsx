@@ -6,7 +6,7 @@ const BrandRoot = styled.div`
   display: inline-flex;
   align-items: center;
   justify-self: start;
-  gap: ${spacing[8]};
+  gap: ${spacing.xs};
   padding: 0;
   border: 0;
   color: inherit;
@@ -14,22 +14,22 @@ const BrandRoot = styled.div`
 `;
 
 export function Brand() {
-  return <BrandRoot><BrandMark><Icon name="sparkles" size={spacing[16]} /></BrandMark><BrandName>Aria</BrandName></BrandRoot>;
+  return <BrandRoot><BrandMark><Icon name="sparkles" size={spacing.md} /></BrandMark><BrandName>Aria</BrandName></BrandRoot>;
 }
 
 const BrandName = styled(Text).attrs({ as: "span" })`
   font-family: ${fonts.heading};
-  font-size: ${fontSize[18]};
+  font-size: ${fontSize.md};
   font-weight: 700;
   letter-spacing: -0.025em;
 `;
 
 const BrandMark = styled(Text).attrs({ as: "span" })`
   display: grid;
-  width: ${spacing[32]};
-  height: ${spacing[32]};
+  width: ${spacing.xl};
+  height: ${spacing.xl};
   place-items: center;
-  border-radius: ${radius[8]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[0]};
   background: ${colors.forest[600]};
 `;

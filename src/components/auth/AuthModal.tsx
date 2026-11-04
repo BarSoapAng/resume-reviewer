@@ -54,62 +54,62 @@ const ModalBackdrop = styled.div`
   inset: 0;
   display: grid;
   place-items: center;
-  padding: ${spacing[24]};
+  padding: ${spacing.lg};
   background: ${alpha(colors.paper[900], 0.48)};
 `;
 
 const AuthDialog = styled.section`
   display: grid;
-  width: min(100%, ${spacing[384]});
-  gap: ${spacing[12]};
-  padding: ${spacing[24]};
-  border-radius: ${radius[16]};
+  width: min(100%, ${spacing["10xl"]});
+  gap: ${spacing.sm};
+  padding: ${spacing.lg};
+  border-radius: ${radius.lg};
   background: ${colors.paper[0]};
-  box-shadow: 0 ${spacing[24]} ${spacing[64]} ${alpha(colors.paper[900], 0.25)};
+  box-shadow: 0 ${spacing.lg} ${spacing["4xl"]} ${alpha(colors.paper[900], 0.25)};
 `;
 
 const AuthActions = styled(Form)`
   display: grid;
-  gap: ${spacing[8]};
-  margin-top: ${spacing[4]};
+  gap: ${spacing.xs};
+  margin-top: ${spacing.xxs};
 `;
 
 const AuthMessage = styled(Body).attrs({ as: "p" })`
   margin: 0;
   color: ${colors.forest[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   line-height: 1.4;
 `;
 
 const AuthDivider = styled.div`
   display: flex;
   align-items: center;
-  gap: ${spacing[8]};
+  gap: ${spacing.xs};
   color: ${colors.paper[600]};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
   text-transform: uppercase;
 
-  &::before, &::after { height: ${spacing[1]}; flex: 1; background: ${colors.paper[300]}; content: ""; }
+  &::before, &::after { height: ${spacing.hairline}; flex: 1; background: ${colors.paper[300]}; content: ""; }
 `;
 
 const AuthButton = styled(Button)`
-  min-height: ${spacing[40]};
-  border: ${spacing[1]} solid ${colors.paper[400]};
-  border-radius: ${radius[8]};
+  min-height: ${spacing.xxl};
+  border: ${spacing.hairline} solid ${colors.paper[400]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[900]};
   background: ${colors.paper[0]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 700;
 
   &:hover { border-color: ${colors.forest[600]}; background: ${colors.forest[100]}; }
 `;
 
 const AuthEmailInput = styled(Input)`
-  min-height: ${spacing[40]};
-  padding: 0 ${spacing[12]};
-  border: ${spacing[1]} solid ${colors.paper[400]};
-  border-radius: ${radius[8]};
+  min-height: ${spacing.xxl};
+  padding: 0 ${spacing.sm};
+  border: ${spacing.hairline} solid ${colors.paper[400]};
+  border-radius: ${radius.sm};
   color: ${colors.paper[900]};
   background: ${colors.paper[0]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
 `;

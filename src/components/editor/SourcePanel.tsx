@@ -37,12 +37,12 @@ export function SourcePanel({ model }: {
   return (
     <PanelFrame $mobileActive={activeTab === "source"} aria-labelledby="workspace-tab-source" id="workspace-panel-source" role="tabpanel">
       <ToolHeader>
-        <ToolTitle><Icon name="code" size={spacing[16]} /> Source</ToolTitle>
+        <ToolTitle><Icon name="code" size={spacing.md} /> Source</ToolTitle>
         <ToolActions>
           {!reviewOpen && (
-            <QuietButton onClick={() => setReviewOpen(true)}><Icon name="message" size={spacing[16]} /> Show review</QuietButton>
+            <QuietButton onClick={() => setReviewOpen(true)}><Icon name="message" size={spacing.md} /> Show review</QuietButton>
           )}
-          <QuietButton onClick={() => fileInput.current?.click()}><Icon name="upload" size={spacing[16]} /> Replace</QuietButton>
+          <QuietButton onClick={() => fileInput.current?.click()}><Icon name="upload" size={spacing.md} /> Replace</QuietButton>
           <input
             ref={fileInput}
             accept=".tex,text/plain"
@@ -103,25 +103,25 @@ export function SourcePanel({ model }: {
 
 const EditorMeta = styled.div`
   display: flex;
-  min-height: ${spacing[40]};
+  min-height: ${spacing.xxl};
   align-items: center;
   justify-content: space-between;
-  gap: ${spacing[12]};
-  padding: 0 ${spacing[12]};
-  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  gap: ${spacing.sm};
+  padding: 0 ${spacing.sm};
+  border-bottom: ${spacing.hairline} solid ${colors.paper[300]};
   background: ${colors.paper[200]};
 `;
 
 const FileName = styled(Text).attrs({ as: "span" })`
   font-family: ${fonts.mono};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
   font-weight: 500;
 `;
 
 const SelectedAnchor = styled(Text).attrs({ as: "span" })`
   overflow: hidden;
   color: ${colors.paper[600]};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
@@ -134,8 +134,8 @@ const EditorWrap = styled.div`
 
   .cm-theme, .cm-editor { height: 100%; }
   .cm-scroller { overflow: auto; font-family: ${fonts.mono}; }
-  .cm-content, .cm-gutter { font-size: ${fontSize[12]}; line-height: 1.75; }
-  .cm-gutters { border-right: ${spacing[1]} solid ${colors.paper[300]}; color: ${colors.paper[500]}; background: ${colors.paper[200]}; }
+  .cm-content, .cm-gutter { font-size: ${fontSize.xs}; line-height: 1.75; }
+  .cm-gutters { border-right: ${spacing.hairline} solid ${colors.paper[300]}; color: ${colors.paper[500]}; background: ${colors.paper[200]}; }
   .cm-activeLine, .cm-activeLineGutter { background: ${colors.forest[100]}; }
   .cm-focused { outline: none !important; }
   .cm-cursor { border-left-color: ${colors.forest[600]}; }
@@ -144,30 +144,30 @@ const EditorWrap = styled.div`
 
 const EditorStatus = styled(Code).attrs({ as: "div" })`
   display: flex;
-  min-height: ${spacing[24]};
+  min-height: ${spacing.lg};
   align-items: center;
   justify-content: flex-end;
-  gap: ${spacing[16]};
-  padding: 0 ${spacing[12]};
-  border-top: ${spacing[1]} solid ${colors.paper[300]};
+  gap: ${spacing.md};
+  padding: 0 ${spacing.sm};
+  border-top: ${spacing.hairline} solid ${colors.paper[300]};
   color: ${colors.paper[600]};
   background: ${colors.paper[0]};
   font-family: ${fonts.mono};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
 `;
 
 const DiagnosticsPanel = styled.div`
-  max-height: ${spacing[128]};
-  padding: ${spacing[8]} ${spacing[12]};
+  max-height: ${spacing["6xl"]};
+  padding: ${spacing.xs} ${spacing.sm};
   overflow: auto;
-  border-top: ${spacing[1]} solid ${colors.paper[300]};
+  border-top: ${spacing.hairline} solid ${colors.paper[300]};
   background: ${colors.paper[0]};
 `;
 
 const DiagnosticRow = styled(Code).attrs({ as: "div" }) <{ $severity: "error" | "warning"; }>`
-  padding: ${spacing[4]} 0;
+  padding: ${spacing.xxs} 0;
   color: ${({ $severity }) => ($severity === "error" ? colors.error[600] : colors.warning[800])};
   font-family: ${fonts.mono};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
   line-height: 1.4;
 `;

@@ -25,9 +25,9 @@ export function WorkspaceFooter({ model }: {
       </CompileStatus>
       <FooterHint>{diagnostics.length ? `${diagnostics.length} compiler diagnostic${diagnostics.length === 1 ? "" : "s"}` : "Changes are saved locally"}</FooterHint>
       <FooterActions>
-        <FooterDownloadButton aria-label="Download .tex source" onClick={downloadSource}><Icon name="download" size={spacing[16]} /><Text>Download .tex</Text></FooterDownloadButton>
+        <FooterDownloadButton aria-label="Download .tex source" onClick={downloadSource}><Icon name="download" size={spacing.md} /><Text>Download .tex</Text></FooterDownloadButton>
         <PrimaryButton disabled={reviewBusy || Boolean(reviewId)} onClick={() => void beginReview()}>
-          <Icon name="sparkles" size={spacing[16]} /> {reviewId ? "Review active" : reviewBusy ? "Starting…" : "Start review"}
+          <Icon name="sparkles" size={spacing.md} /> {reviewId ? "Review active" : reviewBusy ? "Starting…" : "Start review"}
         </PrimaryButton>
       </FooterActions>
     </FooterBar>
@@ -37,32 +37,32 @@ export function WorkspaceFooter({ model }: {
 const FooterBar = styled.footer`
   display: flex;
   align-items: center;
-  gap: ${spacing[16]};
-  padding: 0 ${spacing[16]} 0 ${spacing[16]};
-  border-top: ${spacing[1]} solid ${colors.paper[300]};
+  gap: ${spacing.md};
+  padding: 0 ${spacing.md} 0 ${spacing.md};
+  border-top: ${spacing.hairline} solid ${colors.paper[300]};
   background: ${colors.paper[0]};
 `;
 
 const CompileStatus = styled(Label).attrs({ as: "div" })`
   display: flex;
   align-items: center;
-  gap: ${spacing[8]};
+  gap: ${spacing.xs};
   color: ${colors.paper[600]};
-  font-size: ${fontSize[12]};
+  font-size: ${fontSize.xs};
   font-weight: 600;
 `;
 
 const StatusDot = styled(Text).attrs({ as: "span" }) <{ $state: "idle" | "compiling" | "success" | "error"; }>`
-  width: ${spacing[8]};
-  height: ${spacing[8]};
+  width: ${spacing.xs};
+  height: ${spacing.xs};
   border-radius: ${radius.full};
   background: ${({ $state }) => $state === "success" ? colors.forest[600] : $state === "error" ? colors.error[600] : $state === "compiling" ? colors.apricot[400] : colors.paper[600]};
-  box-shadow: 0 0 0 ${spacing[4]} ${colors.forest[100]};
+  box-shadow: 0 0 0 ${spacing.xxs} ${colors.forest[100]};
 `;
 
 const FooterHint = styled(Text).attrs({ as: "span" })`
   color: ${colors.paper[600]};
-  font-size: ${fontSize[10]};
+  font-size: ${fontSize.xxs};
 
   @media (max-width: ${breakpoints.mobile}) { display: none; }
 `;
@@ -70,13 +70,13 @@ const FooterHint = styled(Text).attrs({ as: "span" })`
 const FooterActions = styled.div`
   display: flex;
   align-items: center;
-  gap: ${spacing[4]};
+  gap: ${spacing.xxs};
   margin-left: auto;
 `;
 
 const FooterDownloadButton = styled(QuietButton)`
   @media (max-width: ${breakpoints.mobile}) {
-    width: ${spacing[32]};
+    width: ${spacing.xl};
     padding: 0;
     justify-content: center;
 
