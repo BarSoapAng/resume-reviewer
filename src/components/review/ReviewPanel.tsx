@@ -1,489 +1,104 @@
-import { colors, fontSize, spacing, radius, alpha, shadows, Body, Text, Label, Code, Strong } from "../../lib/style";
-import { Textarea } from "../base/Textarea";
-import { Card } from "../base/Card";
-import { Button } from "../base/Button";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import { PanelFrame } from "../layout/PanelFrame";
-import { IconButton } from "../base/IconButton";
-import { PanelTitle } from "../typography/PanelTitle";
-import { PanelEyebrow } from "../typography/PanelEyebrow";
-import { ReviewerCopy } from "../typography/ReviewerCopy";
+import { colors, fontSize, spacing, radius, Body } from "../../lib/style";
+import { Textarea } from "../base/Textarea";
+import { Button } from "../base/Button";
 import { TextButton } from "../base/TextButton";
+import { PanelFrame } from "../layout/PanelFrame";
+import { ToolHeader } from "../layout/ToolHeader";
+import { ToolTitle } from "../layout/ToolTitle";
 import type { WorkspaceModel } from "../../hooks/useResumeWorkspace";
-import { Icon } from "../base/Icon";
+import type { ConversationMessage, ConversationPart, QuestionResponse, QuestionSubmission } from "../../../packages/reviewer/src/conversation";
 
-export function ReviewPanel({ model }: {
-  model: Pick<WorkspaceModel,
-    "activeTab" | "beginReview" | "checkoutPending" | "openCheckout" | "edits" | "isDemoResume" | "issues" | "message" | "messages" | "paymentRequired" | "resolveIssue" | "reviewBusy" | "reviewError" | "reviewId" | "reviewState" | "selectIssue" | "selectedIssue" | "sendMessage" | "setActiveTab" | "setMessage" | "setReviewOpen" | "unresolvedCount" | "updateEdit"
-  >;
-}) {
-  const {
-    activeTab,
-    beginReview,
-    checkoutPending,
-    openCheckout,
-    edits,
-    isDemoResume,
-    issues,
-    message,
-    messages,
-    paymentRequired,
-    resolveIssue,
-    reviewBusy,
-    reviewError,
-    reviewId,
-    reviewState,
-    selectIssue,
-    selectedIssue,
-    sendMessage,
-    setActiveTab,
-    setMessage,
-    setReviewOpen,
-    unresolvedCount,
-    updateEdit,
-  } = model;
+type QuestionPart = Extract<ConversationPart, { type: "questions" }>;
+
+export function ReviewPanel({ model }: { model: Pick<WorkspaceModel,
+  "activeTab" | "beginReview" | "checkoutPending" | "openCheckout" | "edits" | "message" | "messages" | "paymentRequired" | "reviewBusy" | "reviewId" | "sendMessage" | "setMessage" | "updateEdit" | "discipline" | "setDiscipline" | "documentId" | "submitQuestions"
+> }) {
+  const { messages, reviewBusy } = model;
+  const body = useRef<HTMLDivElement>(null);
+  useEffect(() => { body.current?.scrollTo({ top: body.current.scrollHeight }); }, [messages, reviewBusy]);
+  const groups = messages.flatMap((message) => message.parts.filter((part): part is QuestionPart => part.type === "questions").map((part) => ({ message, part })));
+  const activeGroup = groups.find(({ part }) => !part.answers && part.questions.length > 0);
   return (
-    <PanelFrame $mobileActive={activeTab === "review"} aria-labelledby="workspace-tab-review" id="workspace-panel-review" role="tabpanel">
-      <PanelHeader>
-        <PanelTitleWrap>
-          <PanelEyebrow>{isDemoResume && !reviewId ? "AI reviewer · Demo" : `AI reviewer · ${reviewState.replaceAll("_", " ")}`}</PanelEyebrow>
-          <PanelTitle>{reviewBusy ? "Reviewing your evidence…" : "Let’s make this stronger."}</PanelTitle>
-        </PanelTitleWrap>
-        <IconButton aria-label="Collapse review panel" onClick={() => {
-          setReviewOpen(false);
-          setActiveTab("source");
-        }} title="Collapse panel">
-          <Icon name="collapse" size={spacing.md} />
-        </IconButton>
-      </PanelHeader>
-      <ReviewBody>
-        {!isDemoResume && !reviewId && (
-          <UnavailableNotice>
-            <ReviewerIcon><Icon name="sparkles" size={spacing.md} /></ReviewerIcon>
-            <div>
-              <ReviewerName>Review not started</ReviewerName>
-              <ReviewerCopy>Your source is ready. Sign in and start a review when you want structured feedback.</ReviewerCopy>
-            </div>
-          </UnavailableNotice>
-        )}
-        {issues.length > 0 && <>
-          <ReviewerIntro>
-            <ReviewerIcon><Icon name="sparkles" size={spacing.md} /></ReviewerIcon>
-            <div>
-              <ReviewerName>Aria reviewer</ReviewerName>
-              <ReviewerCopy>
-                I found {unresolvedCount} {unresolvedCount === 1 ? "area" : "areas"} worth strengthening. I’ll ask before adding any facts.
-              </ReviewerCopy>
-            </div>
-          </ReviewerIntro>
-
-          <ProgressRow>
-            <ProgressText>Initial review</ProgressText>
-            <ProgressCount>{issues.length - unresolvedCount} of {issues.length} addressed</ProgressCount>
-          </ProgressRow>
-          <ProgressTrack><ProgressFill $progress={issues.length ? ((issues.length - unresolvedCount) / issues.length) * 100 : 0} /></ProgressTrack>
-
-          <SectionLabel>Priority feedback</SectionLabel>
-          <IssueList>
-            {issues.map((issue) => (
-              <IssueCard
-                key={issue.id}
-                $active={selectedIssue?.id === issue.id}
-                $resolved={issue.status === "resolved" || issue.status === "skipped"}
-              >
-                <IssueSummaryButton
-                  aria-expanded={selectedIssue?.id === issue.id}
-                  onClick={() => selectIssue(issue)}
-                >
-                  <IssueTopline>
-                    <Severity $severity={issue.severity}>
-                      {issue.status === "resolved" || issue.status === "skipped" ? issue.status : issue.severity}
-                    </Severity>
-                    <Text>{issue.location}</Text>
-                  </IssueTopline>
-                  <IssueTitle>{issue.label}</IssueTitle>
-                </IssueSummaryButton>
-                {selectedIssue?.id === issue.id && (
-                  <IssueExpanded>
-                    <Body>{issue.detail}</Body>
-                    <QuestionBlock>
-                      <QuestionLabel>One thing I’d ask</QuestionLabel>
-                      {issue.question}
-                    </QuestionBlock>
-                    <IssueActions>
-                      <TextButton onClick={resolveIssue}>Skip for now</TextButton>
-                      <AnswerButton onClick={() => document.getElementById("review-message")?.focus()}>
-                        Answer <Icon name="arrow" size={spacing.md} />
-                      </AnswerButton>
-                    </IssueActions>
-                  </IssueExpanded>
-                )}
-              </IssueCard>
-            ))}
-          </IssueList>
-
-          {messages.map((item, index) => item.role === "user" ? (
-            <UserMessage key={`${item.content}-${index}`}>{item.content}</UserMessage>
-          ) : (
-            <AssistantMessage key={`${item.content}-${index}`}>{item.content}</AssistantMessage>
-          ))}
-          {edits.filter((edit) => edit.status === "pending" || edit.status === "stale").map((edit) => (
-            <EditCard key={edit.id}>
-              <QuestionLabel>Proposed edit</QuestionLabel>
-              <DiffLine $removed>- {edit.oldText}</DiffLine>
-              <DiffLine>+ {edit.newText}</DiffLine>
-              <ReviewerCopy>{edit.explanation}</ReviewerCopy>
-              <IssueActions>
-                <TextButton onClick={() => void updateEdit(edit, "reject")}>Reject</TextButton>
-                <AnswerButton disabled={edit.status === "stale"} onClick={() => void updateEdit(edit, "accept")}>
-                  {edit.status === "stale" ? "Outdated" : "Accept"}
-                </AnswerButton>
-              </IssueActions>
-            </EditCard>
-          ))}
-          {reviewError && <ErrorNotice role="alert">{reviewError}</ErrorNotice>}
-          {paymentRequired && (
-            <PaymentCard>
-              <Strong>Pay what you want, starting at $1</Strong>
-              <Text>Choose your amount in Stripe. One payment unlocks one complete review.</Text>
-              <AnswerButton disabled={checkoutPending} onClick={() => void openCheckout()}>{checkoutPending ? "Opening checkout..." : "Continue to Stripe"}</AnswerButton>
-              <TextButton onClick={() => void beginReview()}>I’ve paid — check again</TextButton>
-            </PaymentCard>
-          )}
-        </>}
+    <PanelFrame $mobileActive={model.activeTab === "review"} aria-label="Ario" id="workspace-panel-review">
+      <ToolHeader>
+        <ToolTitle>Ario</ToolTitle>
+        <Discipline aria-label="Review discipline" value={model.discipline} onChange={(event) => model.setDiscipline(event.target.value as "software" | "mechanical")}>
+          <option value="software">SWE</option><option value="mechanical">MECH</option>
+        </Discipline>
+      </ToolHeader>
+      <ReviewBody ref={body} aria-label="Conversation" aria-live="polite" aria-relevant="additions text">
+        {messages.length === 0 && <Body>Send your resume to Ario. I’ll ask about your experience before proposing changes.</Body>}
+        {messages.map((item) => <Message key={item.id} $user={item.role === "user"}>
+          <Speaker>{item.role === "user" ? "You" : "Ario"}</Speaker>
+          {item.parts.some((part) => part.type === "text") ? item.parts.map((part, index) => part.type === "text" ? <Copy key={index}>{part.text}</Copy> : null) : <Copy>{item.content}</Copy>}
+          {item.parts.map((part, index) => part.type === "tool" ? <ToolActivity key={index}>{part.name} · {part.state === "completed" ? "Complete" : "In progress"}</ToolActivity> : part.type === "questions" ? <QuestionHistory key={part.groupId} part={part} /> : part.type === "edits" ? part.editIds.map((id) => {
+            const edit = model.edits.find((value) => value.id === id);
+            return edit ? <Edit key={id}><Speaker>Proposed edit · {edit.status}</Speaker><Diff $removed>{edit.oldText}</Diff><Diff>{edit.newText}</Diff><Copy>{edit.explanation}</Copy>{(edit.status === "pending" || edit.status === "stale") && <Actions><TextButton onClick={() => void model.updateEdit(edit, "reject")}>Reject</TextButton><Action disabled={edit.status !== "pending" || reviewBusy} onClick={() => void model.updateEdit(edit, "accept")}>Accept</Action></Actions>}</Edit> : null;
+          }) : null)}
+        </Message>)}
+        {reviewBusy && <ToolActivity role="status">Ario is responding…</ToolActivity>}
+        {model.paymentRequired && <Payment><Body>Choose your review payment to continue.</Body><Action disabled={model.checkoutPending} onClick={() => void model.openCheckout()}>{model.checkoutPending ? "Opening checkout…" : "Continue to payment"}</Action><TextButton disabled={reviewBusy} onClick={() => void model.beginReview()}>I’ve paid — check again</TextButton></Payment>}
       </ReviewBody>
-      <Composer>
-        <ComposerInput
-          id="review-message"
-          aria-label="Reply to reviewer"
-          onChange={(event) => setMessage(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey) {
-              event.preventDefault();
-              sendMessage();
-            }
-          }}
-          disabled={!reviewId || reviewBusy}
-          placeholder={reviewId ? "Answer the reviewer…" : "Start a review to answer questions"}
-          rows={2}
-          value={message}
-        />
-        <SendButton aria-label="Send message" disabled={!reviewId || reviewBusy || !message.trim()} onClick={() => void sendMessage()}>
-          <Icon name="arrow" size={spacing.md} />
-        </SendButton>
+      {activeGroup && <QuestionCard key={`${model.documentId}:${activeGroup.part.groupId}`} message={activeGroup.message} part={activeGroup.part} busy={reviewBusy} submit={model.submitQuestions} />}
+      <Composer onSubmit={(event) => { event.preventDefault(); void model.sendMessage(); }}>
+        <ComposerInput id="review-message" aria-label="Message Ario" placeholder={model.reviewId ? "Message Ario…" : "Review this resume…"} rows={2} value={model.message} onChange={(event) => model.setMessage(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void model.sendMessage(); } }} />
+        <Action type="submit" disabled={reviewBusy || (!!model.reviewId && !model.message.trim())} aria-label="Send message">Send</Action>
       </Composer>
     </PanelFrame>
   );
 }
 
-const PanelHeader = styled.div`
-  display: flex;
-  min-height: ${spacing["5xl"]};
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: ${spacing.sm};
-  padding: ${spacing.lg} ${spacing.md} ${spacing.md};
-  border-bottom: ${spacing.hairline} solid ${colors.paper[300]};
-  background: ${colors.paper[0]};
-`;
+function QuestionHistory({ part }: { part: QuestionPart }) {
+  return <History>{part.questions.map((question) => {
+    const answer = part.answers?.find((item) => item.questionId === question.id);
+    return <div key={question.id}><Copy>{question.text}</Copy>{answer && <Answer>{answer.state === "skipped" ? "Skipped" : answer.answer.trim() || "No answer provided"}</Answer>}</div>;
+  })}</History>;
+}
 
-const PanelTitleWrap = styled.div`
-  display: grid;
-  gap: ${spacing.xs};
-`;
+function QuestionCard({ message, part, busy, submit }: { message: ConversationMessage; part: QuestionPart; busy: boolean; submit: (submission: QuestionSubmission) => Promise<void> }) {
+  const storageKey = `aria:questions:${message.documentId}:${message.turnId}:${part.groupId}`;
+  const [draft, setDraft] = useState<{ index: number; answers: QuestionResponse[] }>(() => {
+    try { const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null"); if (saved && Array.isArray(saved.answers)) return { index: Math.min(Math.max(saved.index || 0, 0), part.questions.length - 1), answers: saved.answers }; } catch { /* keep drafts in memory when storage is unavailable */ }
+    return { index: 0, answers: [] };
+  });
+  const question = part.questions[draft.index];
+  const answer = draft.answers.find((value) => value.questionId === question.id);
+  const save = (next: typeof draft) => {
+    setDraft(next);
+    try { localStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* the active draft remains in memory */ }
+  };
+  const respond = async (state: QuestionResponse["state"]) => {
+    const answers = part.questions.map((item) => item.id === question.id ? { questionId: item.id, state, answer: state === "skipped" ? "" : answer?.answer ?? "" } : draft.answers.find((value) => value.questionId === item.id) ?? { questionId: item.id, state: "unanswered" as const, answer: "" });
+    save({ index: Math.min(draft.index + 1, part.questions.length - 1), answers });
+    if (draft.index === part.questions.length - 1) await submit({ turnId: message.turnId, groupId: part.groupId, answers });
+  };
+  return <QuestionBox aria-label="Resume question">
+    <QuestionTop><Speaker>Question {draft.index + 1} of {part.questions.length}</Speaker><Severity>{question.priority ?? "medium"}</Severity></QuestionTop>
+    <QuestionText as="label" htmlFor={`answer-${part.groupId}`}>{question.text}</QuestionText>
+    <AnswerInput id={`answer-${part.groupId}`} placeholder="Share what you know, or leave this blank" value={answer?.answer ?? ""} onChange={(event) => save({ ...draft, answers: [...draft.answers.filter((value) => value.questionId !== question.id), { questionId: question.id, state: "unanswered", answer: event.target.value }] })} rows={2} />
+    <Actions><TextButton disabled={draft.index === 0 || busy} onClick={() => save({ ...draft, index: draft.index - 1 })}>Previous</TextButton><TextButton disabled={busy} onClick={() => void respond("skipped").catch(() => undefined)}>Skip</TextButton><Action disabled={busy} onClick={() => void respond("answered").catch(() => undefined)}>{draft.index === part.questions.length - 1 ? "Submit answers" : "Answer / Next"}</Action></Actions>
+  </QuestionBox>;
+}
 
-const ReviewBody = styled.div`
-  min-height: 0;
-  padding: ${spacing.md};
-  overflow: auto;
-  scrollbar-width: thin;
-`;
-
-const ReviewerIntro = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: ${spacing.sm};
-  padding-bottom: ${spacing.md};
-`;
-
-const UnavailableNotice = styled(ReviewerIntro)`
-  padding: ${spacing.sm};
-  border: ${spacing.hairline} solid ${colors.paper[300]};
-  border-radius: ${radius.md};
-  background: ${colors.paper[0]};
-`;
-
-const ReviewerIcon = styled.div`
-  display: grid;
-  width: ${spacing.xl};
-  height: ${spacing.xl};
-  place-items: center;
-  border-radius: ${radius.sm};
-  color: ${colors.forest[600]};
-  background: ${colors.forest[100]};
-`;
-
-const ReviewerName = styled(Text).attrs({ as: "div" })`
-  margin: ${spacing.hairline} 0 ${spacing.xxs};
-  font-size: ${fontSize.xs};
-  font-weight: 700;
-`;
-
-const ProgressRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  margin-top: ${spacing.xxxs};
-`;
-
-const ProgressText = styled(Text).attrs({ as: "span" })`
-  font-size: ${fontSize.xs};
-  font-weight: 700;
-`;
-
-const ProgressCount = styled(Text).attrs({ as: "span" })`
-  color: ${colors.paper[600]};
-  font-size: ${fontSize.xs};
-`;
-
-const ProgressTrack = styled.div`
-  height: ${spacing.xxs};
-  margin-top: ${spacing.xs};
-  overflow: hidden;
-  border-radius: ${radius.pill};
-  background: ${colors.paper[300]};
-`;
-
-const ProgressFill = styled.div<{ $progress: number; }>`
-  width: ${({ $progress }) => `${$progress}%`};
-  height: 100%;
-  border-radius: inherit;
-  background: ${colors.forest[600]};
-  transition: width 220ms ease;
-`;
-
-const SectionLabel = styled(Label).attrs({ as: "div" })`
-  margin: ${spacing.lg} 0 ${spacing.sm};
-  color: ${colors.paper[600]};
-  font-size: ${fontSize.xxs};
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-`;
-
-const IssueList = styled.div`
-  display: grid;
-  gap: ${spacing.xs};
-`;
-
-const IssueCard = styled.div<{ $active: boolean; $resolved: boolean; }>`
-  width: 100%;
-  border: ${spacing.hairline} solid ${({ $active }) => ($active ? colors.forest[600] : colors.paper[300])};
-  border-radius: ${radius.md};
-  color: inherit;
-  background: ${({ $active, $resolved }) => ($resolved ? colors.forest[100] : $active ? colors.paper[0] : alpha(colors.paper[0], 0))};
-  box-shadow: ${({ $active }) => ($active ? `0 ${spacing.xxs} ${spacing.md} ${alpha(colors.paper[900], 0.06)}` : "none")};
-  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
-
-  &:hover { border-color: ${colors.paper[400]}; }
-`;
-
-const IssueSummaryButton = styled(Button)`
-  width: 100%;
-  padding: ${spacing.sm};
-  border: 0;
-  color: inherit;
-  background: ${alpha(colors.paper[0], 0)};
-  text-align: left;
-`;
-
-const IssueTopline = styled(Label).attrs({ as: "div" })`
-  display: flex;
-  align-items: center;
-  gap: ${spacing.xs};
-  color: ${colors.paper[600]};
-  font-size: ${fontSize.xxs};
-  white-space: nowrap;
-  overflow: hidden;
-
-  span:last-child { overflow: hidden; text-overflow: ellipsis; }
-`;
-
-const Severity = styled(Text).attrs({ as: "span" }) <{ $severity: string; }>`
-  flex: 0 0 auto;
-  padding: ${spacing.xxs} ${spacing.xs};
-  border-radius: ${radius.xs};
-  color: ${({ $severity }) => ($severity === "high" ? colors.error[600] : colors.forest[800])};
-  background: ${({ $severity }) => ($severity === "high" ? colors.error[100] : colors.apricot[100])};
-  font-size: ${fontSize.xxs};
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-`;
-
-const IssueTitle = styled(Text).attrs({ as: "div" })`
-  margin-top: ${spacing.xs};
-  font-size: ${fontSize.sm};
-  font-weight: 700;
-`;
-
-const IssueExpanded = styled.div`
-  padding: 0 ${spacing.sm} ${spacing.sm};
-
-  > p { margin: 0; color: ${colors.paper[600]}; font-size: ${fontSize.xs}; line-height: 1.5; }
-`;
-
-const QuestionBlock = styled(Body).attrs({ as: "div" })`
-  margin-top: ${spacing.sm};
-  padding: ${spacing.sm};
-  border-left: ${spacing.xxxs} solid ${colors.apricot[400]};
-  border-radius: 0 ${radius.sm} ${radius.sm} 0;
-  background: ${colors.apricot[100]};
-  font-size: ${fontSize.xs};
-  line-height: 1.45;
-`;
-
-const QuestionLabel = styled(Text).attrs({ as: "span" })`
-  display: block;
-  margin-bottom: ${spacing.xxs};
-  color: ${colors.paper[600]};
-  font-size: ${fontSize.xxs};
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-`;
-
-const IssueActions = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: ${spacing.xs};
-  margin-top: ${spacing.sm};
-`;
-
-const UserMessage = styled(Body).attrs({ as: "div" })`
-  max-width: 88%;
-  margin: ${spacing.md} 0 0 auto;
-  padding: ${spacing.sm} ${spacing.sm};
-  border-radius: ${radius.md} ${radius.md} ${radius.xxs} ${radius.md};
-  color: ${colors.paper[0]};
-  background: ${colors.forest[600]};
-  font-size: ${fontSize.xs};
-  line-height: 1.45;
-`;
-
-const AssistantMessage = styled(Body).attrs({ as: "div" })`
-  max-width: 92%;
-  margin-top: ${spacing.md};
-  padding: ${spacing.sm} ${spacing.sm};
-  border: ${spacing.hairline} solid ${colors.paper[300]};
-  border-radius: ${radius.xxs} ${radius.md} ${radius.md} ${radius.md};
-  background: ${colors.paper[0]};
-  font-size: ${fontSize.xs};
-  line-height: 1.5;
-`;
-
-const DiffLine = styled(Code).attrs({ as: "code" }) <{ $removed?: boolean; }>`
-  display: block;
-  padding: ${spacing.xs} ${spacing.xs};
-  border-radius: ${radius.xs};
-  color: ${({ $removed }) => ($removed ? colors.error[600] : colors.forest[800])};
-  background: ${({ $removed }) => ($removed ? colors.error[100] : colors.forest[100])};
-  font-size: ${fontSize.xxs};
-  line-height: 1.45;
-  white-space: pre-wrap;
-`;
-
-const ErrorNotice = styled(Body).attrs({ as: "p" })`
-  margin: ${spacing.md} 0 0;
-  padding: ${spacing.sm};
-  border-radius: ${radius.sm};
-  color: ${colors.error[600]};
-  background: ${colors.error[100]};
-  font-size: ${fontSize.xs};
-  line-height: 1.45;
-`;
-
-const PaymentCard = styled.div`
-  display: grid;
-  gap: ${spacing.xs};
-  margin-top: ${spacing.sm};
-  padding: ${spacing.sm};
-  border: ${spacing.hairline} solid ${colors.apricot[400]};
-  border-radius: ${radius.sm};
-  background: ${colors.apricot[100]};
-  font-size: ${fontSize.xs};
-  line-height: 1.45;
-
-  span { color: ${colors.paper[600]}; }
-`;
-
-const SendButton = styled(Button)`
-  position: absolute;
-  right: ${spacing.xs};
-  bottom: ${spacing.xs};
-  display: grid;
-  width: ${spacing.xl};
-  height: ${spacing.xl};
-  padding: 0;
-  place-items: center;
-  border: 0;
-  border-radius: ${radius.sm};
-  color: ${colors.paper[0]};
-  background: ${colors.forest[600]};
-
-  &:disabled { cursor: default; opacity: 0.35; }
-`;
-
-const AnswerButton = styled(Button)`
-  display: inline-flex;
-  align-items: center;
-  gap: ${spacing.xxs};
-  padding: ${spacing.xs} ${spacing.xs};
-  border: 0;
-  border-radius: ${radius.sm};
-  color: ${colors.paper[0]};
-  background: ${colors.forest[600]};
-  font-size: ${fontSize.xs};
-  font-weight: 700;
-`;
-
-const EditCard = styled(Card)`
-  display: grid;
-  gap: ${spacing.xs};
-  margin-top: ${spacing.md};
-  padding: ${spacing.sm};
-  border: ${spacing.hairline} solid ${colors.paper[400]};
-  border-radius: ${radius.md};
-  background: ${colors.paper[0]};
-`;
-
-const Composer = styled(Card)`
-  position: relative;
-  margin: auto ${spacing.md} ${spacing.md};
-  border: ${spacing.hairline} solid ${colors.paper[400]};
-  border-radius: ${radius.md};
-  background: ${colors.paper[0]};
-  box-shadow: ${shadows.soft};
-
-  &:focus-within {
-    border-color: ${colors.forest[600]};
-    box-shadow: 0 0 0 ${spacing.xxxs} ${colors.forest[100]};
-  }
-`;
-
-const ComposerInput = styled(Textarea)`
-  display: block;
-  width: 100%;
-  min-height: ${spacing["4xl"]};
-  padding: ${spacing.sm} ${spacing.xxl} ${spacing.sm} ${spacing.sm};
-  resize: none;
-  border: 0;
-  color: ${colors.paper[900]};
-  background: ${alpha(colors.paper[0], 0)};
-  font-size: ${fontSize.xs};
-  line-height: 1.45;
-
-  &::placeholder { color: ${colors.paper[500]}; }
-  &:focus-visible { outline: none; }
-  &:disabled { cursor: not-allowed; background: ${colors.paper[200]}; }
-`;
+const Discipline = styled.select`max-width: 90px; border: 0; background: transparent; font: inherit; font-size: ${fontSize.xs};`;
+const ReviewBody = styled.div`flex: 1; min-height: 0; min-width: 0; padding: ${spacing.md}; overflow-y: auto; overflow-x: hidden; overflow-wrap: anywhere; scrollbar-width: thin;`;
+const Message = styled.div<{ $user: boolean }>`margin: 0 0 ${spacing.md}; padding: ${spacing.sm}; border-radius: ${radius.sm}; background: ${({ $user }) => $user ? colors.forest[100] : colors.paper[0]}; overflow-wrap: anywhere; min-width: 0;`;
+const Copy = styled(Body)`white-space: pre-wrap; font-size: ${fontSize.xs}; overflow-wrap: anywhere;`;
+const Speaker = styled.div`font-size: ${fontSize.xs}; font-weight: 700; margin-bottom: ${spacing.xxs};`;
+const ToolActivity = styled.div`font-size: ${fontSize.xs}; color: ${colors.paper[600]}; margin: ${spacing.xs} 0; overflow-wrap: anywhere;`;
+const History = styled.div`display: grid; gap: ${spacing.sm}; margin-top: ${spacing.xs};`;
+const Answer = styled(Copy)`padding-left: ${spacing.sm}; border-left: 2px solid ${colors.forest[200]}; color: ${colors.paper[600]};`;
+const Edit = styled.div`min-width: 0; margin-top: ${spacing.sm};`;
+const Diff = styled.pre<{ $removed?: boolean }>`white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; overflow: auto; padding: ${spacing.xs}; background: ${({ $removed }) => $removed ? colors.error[100] : colors.forest[100]}; font-size: ${fontSize.xxs};`;
+const Actions = styled.div`display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: ${spacing.xs};`;
+const Action = styled(Button)`flex: 0 0 auto; width: fit-content; padding: ${spacing.xs}; border: 0; border-radius: ${radius.xs}; background: ${colors.forest[600]}; color: ${colors.paper[0]}; font-size: ${fontSize.xs};`;
+const Payment = styled.div`display: grid; gap: ${spacing.sm}; padding: ${spacing.sm}; border: 1px solid ${colors.apricot[400]}; border-radius: ${radius.sm};`;
+const Composer = styled.form`display: flex; flex: 0 0 auto; min-width: 0; align-items: flex-end; gap: ${spacing.xs}; padding: ${spacing.sm}; border-top: 1px solid ${colors.paper[300]}; background: ${colors.paper[0]};`;
+const ComposerInput = styled(Textarea)`min-width: 0; flex: 1; resize: vertical; max-height: 25dvh; padding: ${spacing.xs}; border: 1px solid ${colors.paper[400]}; border-radius: ${radius.xs}; font: inherit; font-size: ${fontSize.xs};`;
+const QuestionBox = styled.div`flex: 0 1 auto; min-height: 0; max-height: 45dvh; overflow: auto; margin: 0 ${spacing.sm} ${spacing.xs}; padding: ${spacing.sm}; display: grid; gap: ${spacing.xs}; border: 1px solid ${colors.forest[600]}; border-radius: ${radius.sm}; background: ${colors.paper[0]}; overflow-wrap: anywhere;`;
+const QuestionTop = styled.div`display: flex; align-items: center; justify-content: space-between; gap: ${spacing.xs};`;
+const Severity = styled.span`font-size: ${fontSize.xxs}; color: ${colors.paper[600]}; text-transform: uppercase;`;
+const QuestionText = styled(Copy)`display: block; font-weight: 600;`;
+const AnswerInput = styled(Textarea)`width: 100%; min-height: 55px; max-height: 15dvh; resize: vertical; padding: ${spacing.xs}; border: 1px solid ${colors.paper[400]}; border-radius: ${radius.xs}; font: inherit; font-size: ${fontSize.xs};`;
