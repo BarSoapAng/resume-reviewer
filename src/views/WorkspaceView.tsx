@@ -32,7 +32,7 @@ export function WorkspaceView({ model }: { model: WorkspaceModel }) {
       <WorkspaceRow>
         <Sidebar aria-label="Workspace panels">
           {panels.map((panel) => (
-            <PanelToggle key={panel.id} id={`workspace-tab-${panel.id}`} aria-label={panel.label} aria-controls={`workspace-panel-${panel.id}`} aria-pressed={visible[panel.id]} $active={visible[panel.id]} title={`Show or hide ${panel.label}`} onClick={() => {
+            <PanelToggle key={panel.id} id={`workspace-tab-${panel.id}`} aria-label={panel.label} aria-controls={`workspace-panel-${panel.id}`} aria-pressed={visible[panel.id]} aria-current={selected === panel.id ? "true" : undefined} $active={visible[panel.id]} title={`Show or hide ${panel.label}`} onClick={() => {
               const narrow = window.matchMedia(`(max-width: ${breakpoints.tablet})`).matches;
               if (narrow && visible[panel.id] && selected !== panel.id) {
                 model.setActiveTab(panel.id);
@@ -49,10 +49,10 @@ export function WorkspaceView({ model }: { model: WorkspaceModel }) {
           <PanelGroup direction="horizontal" ref={group}>
             {panels.map((panel, index) => (
               <Fragment key={panel.id}>
-                {index > 0 && visible[panel.id] && panels.slice(0, index).some((item) => visible[item.id]) && <ResizeHandle />}
-                <Panel id={panel.id} order={index} minSize={0} collapsible defaultSize={index === 0 ? 28 : 36} className={`${visible[panel.id] ? "" : "panel-hidden"} ${selected === panel.id ? "" : "mobile-hidden"}`}>
+                <Panel id={panel.id} order={index} minSize={0} maxSize={count && !visible[panel.id] ? 0 : 100} collapsible defaultSize={index === 0 ? 28 : 36} className={`${visible[panel.id] ? "" : "panel-hidden"} ${selected === panel.id ? "" : "mobile-hidden"}`}>
                   {panel.content}
                 </Panel>
+                {index < panels.length - 1 && <ResizeHandle $visible={visible[panel.id] && panels.slice(index + 1).some((item) => visible[item.id])} />}
               </Fragment>
             ))}
           </PanelGroup>
@@ -94,6 +94,7 @@ const PanelToggle = styled(IconButton)<{ $active: boolean }>`
   color: ${({ $active }) => $active ? colors.forest[800] : colors.paper[600]};
   background: ${({ $active }) => $active ? colors.forest[100] : "transparent"};
   border-color: ${({ $active }) => $active ? colors.forest[200] : "transparent"};
+  @media (max-width: ${breakpoints.tablet}) { &[aria-current="true"] { outline: ${spacing.xxxs} solid ${colors.forest[600]}; } }
 `;
 const Workspace = styled.section<{ $empty: boolean }>`
   min-height: 0;
@@ -109,7 +110,8 @@ const Workspace = styled.section<{ $empty: boolean }>`
     section[role="tabpanel"] { display: flex; }
   }
 `;
-const ResizeHandle = styled(PanelResizeHandle)`
+const ResizeHandle = styled(PanelResizeHandle)<{ $visible: boolean }>`
+  display: ${({ $visible }) => $visible ? "block" : "none"};
   position: relative;
   width: ${spacing.xxs};
   background: ${colors.paper[300]};

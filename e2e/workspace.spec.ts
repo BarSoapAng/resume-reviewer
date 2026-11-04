@@ -48,3 +48,22 @@ test("can hide every panel and restore it from the permanent sidebar", async ({ 
   await expect(page.locator("body")).toHaveJSProperty("scrollHeight", await page.evaluate(() => window.innerHeight));
 });
 
+
+
+test("keeps upload names and derives PDF downloads from the edited title", async ({ page }) => {
+  await page.route("**/api/compile", async (route) => {
+    await route.fulfill({ json: { diagnostics: [], pdfBase64: Buffer.from("%PDF-1.4\n%%EOF").toString("base64") } });
+  });
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "Angela Resume.tex", mimeType: "text/plain", buffer: Buffer.from("\\documentclass{article}\\begin{document}Hello\\end{document}"),
+  });
+  await expect(page.getByRole("button", { name: "Angela Resume.tex", exact: true })).toBeVisible();
+  await page.getByTitle("Rename document").click();
+  await page.getByRole("textbox", { name: "Document filename" }).fill("Angela Resume Updated.tex");
+  await page.getByRole("textbox", { name: "Document filename" }).press("Enter");
+  await expect(page.getByRole("button", { name: "Download PDF", exact: true })).toBeEnabled();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download PDF", exact: true }).click();
+  await expect((await download).suggestedFilename()).toBe("Angela Resume Updated.pdf");
+});
