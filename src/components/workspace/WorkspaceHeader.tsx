@@ -1,7 +1,7 @@
+import { colors, fontSize, spacing, radius, breakpoints, alpha, shadows, Body, Text, Strong } from "../../lib/style";
 import { Dropdown } from "../base/Dropdown";
 import { Button } from "../base/Button";
 import styled from "styled-components";
-import { Body, Strong, Text, breakpoints, colors, shadows, textSize, typography } from "../../lib/style";
 import { IconButton } from "../base/IconButton";
 import { Brand } from "../brand/Brand";
 import { TextButton } from "../base/TextButton";
@@ -47,7 +47,7 @@ export function WorkspaceHeader({ model }: {
         </Discipline>
       </DocumentMeta>
       <HeaderActions>
-        <SavedState><Icon name="check" size={14} /> Saved just now</SavedState>
+        <SavedState><Icon name="check" size={spacing[16]} /> Saved just now</SavedState>
         <HistoryWrap>
           <IconButton aria-expanded={historyOpen} aria-label="Version history" onClick={() => setHistoryOpen((open) => !open)} title="Version history"><Icon name="history" /></IconButton>
           {historyOpen && (
@@ -72,14 +72,13 @@ export function WorkspaceHeader({ model }: {
 }
 
 const Header = styled.header`
-  ${typography.body}
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 24px;
-  padding: 0 20px;
-  border-bottom: 1px solid ${colors.border};
-  background: ${colors.surface};
+  gap: ${spacing[24]};
+  padding: 0 ${spacing[24]};
+  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  background: ${colors.paper[100]};
 
   @media (max-width: ${breakpoints.tablet}) {
     grid-template-columns: 1fr auto;
@@ -88,116 +87,105 @@ const Header = styled.header`
 `;
 
 const DocumentMeta = styled.div.attrs({ className: "document-meta" })`
-  ${typography.body}
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: ${spacing[12]};
 `;
 
 const DocumentTitle = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
-  font-size: ${textSize.s14};
+  font-size: ${fontSize[14]};
   font-weight: 600;
 `;
 
 const HeaderActions = styled.div`
-  ${typography.body}
   display: flex;
   align-items: center;
   justify-self: end;
-  gap: 7px;
+  gap: ${spacing[8]};
 `;
 
 const HistoryWrap = styled.div`
-  ${typography.body}
   position: relative;
 `;
 
 const HistoryPopover = styled.div`
-  ${typography.body}
   position: absolute;
   z-index: 20;
-  top: 40px;
+  top: ${spacing[40]};
   right: 0;
-  width: 270px;
-  max-height: 360px;
-  padding: 10px;
+  width: ${spacing[256]};
+  max-height: ${spacing[384]};
+  padding: ${spacing[12]};
   overflow: auto;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 10px;
-  background: ${colors.surfaceStrong};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[12]};
+  background: ${colors.paper[0]};
   box-shadow: ${shadows.soft};
 `;
 
 const HistoryHeading = styled.div`
-  ${typography.body}
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 3px 4px 8px;
-  font-size: ${textSize.s12};
+  padding: ${spacing[4]} ${spacing[4]} ${spacing[8]};
+  font-size: ${fontSize[12]};
 `;
 
 const HistoryItem = styled(Button)`
-  ${typography.body}
   display: grid;
   width: 100%;
-  gap: 3px;
-  padding: 9px;
+  gap: ${spacing[4]};
+  padding: ${spacing[8]};
   border: 0;
-  border-radius: 7px;
-  color: ${colors.ink};
-  background: ${colors.transparent};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[900]};
+  background: ${alpha(colors.paper[0], 0)};
   text-align: left;
 
-  &:hover { background: ${colors.forestPale}; }
-  strong { font-size: ${textSize.s11}; }
-  span { color: ${colors.inkMuted}; font-size: ${textSize.s9}; }
+  &:hover { background: ${colors.forest[100]}; }
+  strong { font-size: ${fontSize[12]}; }
+  span { color: ${colors.paper[600]}; font-size: ${fontSize[10]}; }
 `;
 
 const HistoryEmpty = styled(Body).attrs({ as: "p" })`
-  ${typography.body}
-  margin: 4px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s11};
+  margin: ${spacing[4]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[12]};
 `;
 
 const SavedState = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin-right: 6px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s12};
+  gap: ${spacing[4]};
+  margin-right: ${spacing[8]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[12]};
 
-  svg { color: ${colors.forest}; }
+  svg { color: ${colors.forest[600]}; }
 
   @media (max-width: ${breakpoints.mobile}) { display: none; }
 `;
 
 const Avatar = styled(Button)`
-  ${typography.body}
   display: grid;
-  width: 31px;
-  height: 31px;
-  margin-left: 3px;
+  width: ${spacing[32]};
+  height: ${spacing[32]};
+  margin-left: ${spacing[4]};
   place-items: center;
   border: 0;
-  border-radius: 50%;
-  color: ${colors.forestDark};
-  background: ${colors.apricotPale};
-  font-size: ${textSize.s11};
+  border-radius: ${radius.full};
+  color: ${colors.forest[800]};
+  background: ${colors.apricot[100]};
+  font-size: ${fontSize[12]};
   font-weight: 700;
 `;
 
 const Discipline = styled(Dropdown)`
-  ${typography.body}
-  padding: 5px 8px;
-  border: 1px solid ${colors.border};
-  border-radius: 7px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s11};
+  padding: ${spacing[4]} ${spacing[8]};
+  border: ${spacing[1]} solid ${colors.paper[300]};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[12]};
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;

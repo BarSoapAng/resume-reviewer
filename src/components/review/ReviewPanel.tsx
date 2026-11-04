@@ -1,8 +1,8 @@
+import { colors, fontSize, spacing, radius, alpha, shadows, Body, Text, Label, Code, Strong } from "../../lib/style";
 import { Textarea } from "../base/Textarea";
 import { Card } from "../base/Card";
 import { Button } from "../base/Button";
 import styled from "styled-components";
-import { Body, Code, Label, Strong, Text, colors, shadows, textSize, typography } from "../../lib/style";
 import { PanelFrame } from "../layout/PanelFrame";
 import { IconButton } from "../base/IconButton";
 import { PanelTitle } from "../typography/PanelTitle";
@@ -53,13 +53,13 @@ export function ReviewPanel({ model }: {
           setReviewOpen(false);
           setActiveTab("source");
         }} title="Collapse panel">
-          <Icon name="collapse" size={16} />
+          <Icon name="collapse" size={spacing[16]} />
         </IconButton>
       </PanelHeader>
       <ReviewBody>
         {!isDemoResume && !reviewId && (
           <UnavailableNotice>
-            <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
+            <ReviewerIcon><Icon name="sparkles" size={spacing[16]} /></ReviewerIcon>
             <div>
               <ReviewerName>Review not started</ReviewerName>
               <ReviewerCopy>Your source is ready. Sign in and start a review when you want structured feedback.</ReviewerCopy>
@@ -68,7 +68,7 @@ export function ReviewPanel({ model }: {
         )}
         {issues.length > 0 && <>
           <ReviewerIntro>
-            <ReviewerIcon><Icon name="sparkles" size={16} /></ReviewerIcon>
+            <ReviewerIcon><Icon name="sparkles" size={spacing[16]} /></ReviewerIcon>
             <div>
               <ReviewerName>Aria reviewer</ReviewerName>
               <ReviewerCopy>
@@ -113,7 +113,7 @@ export function ReviewPanel({ model }: {
                     <IssueActions>
                       <TextButton onClick={resolveIssue}>Skip for now</TextButton>
                       <AnswerButton onClick={() => document.getElementById("review-message")?.focus()}>
-                        Answer <Icon name="arrow" size={15} />
+                        Answer <Icon name="arrow" size={spacing[16]} />
                       </AnswerButton>
                     </IssueActions>
                   </IssueExpanded>
@@ -169,7 +169,7 @@ export function ReviewPanel({ model }: {
           value={message}
         />
         <SendButton aria-label="Send message" disabled={!reviewId || reviewBusy || !message.trim()} onClick={() => void sendMessage()}>
-          <Icon name="arrow" size={17} />
+          <Icon name="arrow" size={spacing[16]} />
         </SendButton>
       </Composer>
     </PanelFrame>
@@ -177,147 +177,131 @@ export function ReviewPanel({ model }: {
 }
 
 const PanelHeader = styled.div`
-  ${typography.body}
   display: flex;
-  min-height: 104px;
+  min-height: ${spacing[96]};
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
-  padding: 20px 18px 17px;
-  border-bottom: 1px solid ${colors.border};
-  background: ${colors.surfaceStrong};
+  gap: ${spacing[12]};
+  padding: ${spacing[24]} ${spacing[16]} ${spacing[16]};
+  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  background: ${colors.paper[0]};
 `;
 
 const PanelTitleWrap = styled.div`
-  ${typography.body}
   display: grid;
-  gap: 7px;
+  gap: ${spacing[8]};
 `;
 
 const ReviewBody = styled.div`
-  ${typography.body}
   min-height: 0;
-  padding: 18px;
+  padding: ${spacing[16]};
   overflow: auto;
   scrollbar-width: thin;
 `;
 
 const ReviewerIntro = styled.div`
-  ${typography.body}
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 11px;
-  padding-bottom: 17px;
+  gap: ${spacing[12]};
+  padding-bottom: ${spacing[16]};
 `;
 
 const UnavailableNotice = styled(ReviewerIntro)`
-  padding: 13px;
-  border: 1px solid ${colors.border};
-  border-radius: 10px;
-  background: ${colors.surfaceStrong};
+  padding: ${spacing[12]};
+  border: ${spacing[1]} solid ${colors.paper[300]};
+  border-radius: ${radius[12]};
+  background: ${colors.paper[0]};
 `;
 
 const ReviewerIcon = styled.div`
-  ${typography.body}
   display: grid;
-  width: 31px;
-  height: 31px;
+  width: ${spacing[32]};
+  height: ${spacing[32]};
   place-items: center;
-  border-radius: 9px;
-  color: ${colors.forest};
-  background: ${colors.forestPale};
+  border-radius: ${radius[8]};
+  color: ${colors.forest[600]};
+  background: ${colors.forest[100]};
 `;
 
 const ReviewerName = styled(Text).attrs({ as: "div" })`
-  ${typography.body}
-  margin: 1px 0 5px;
-  font-size: ${textSize.s12};
+  margin: ${spacing[1]} 0 ${spacing[4]};
+  font-size: ${fontSize[12]};
   font-weight: 700;
 `;
 
 const ProgressRow = styled.div`
-  ${typography.body}
   display: flex;
   justify-content: space-between;
-  margin-top: 2px;
+  margin-top: ${spacing[2]};
 `;
 
 const ProgressText = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
-  font-size: ${textSize.s11};
+  font-size: ${fontSize[12]};
   font-weight: 700;
 `;
 
 const ProgressCount = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s11};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[12]};
 `;
 
 const ProgressTrack = styled.div`
-  ${typography.body}
-  height: 4px;
-  margin-top: 8px;
+  height: ${spacing[4]};
+  margin-top: ${spacing[8]};
   overflow: hidden;
-  border-radius: 99px;
-  background: ${colors.border};
+  border-radius: ${radius.pill};
+  background: ${colors.paper[300]};
 `;
 
 const ProgressFill = styled.div<{ $progress: number; }>`
-  ${typography.body}
   width: ${({ $progress }) => `${$progress}%`};
   height: 100%;
   border-radius: inherit;
-  background: ${colors.forest};
+  background: ${colors.forest[600]};
   transition: width 220ms ease;
 `;
 
 const SectionLabel = styled(Label).attrs({ as: "div" })`
-  ${typography.body}
-  margin: 23px 0 10px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s10};
+  margin: ${spacing[24]} 0 ${spacing[12]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[10]};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 `;
 
 const IssueList = styled.div`
-  ${typography.body}
   display: grid;
-  gap: 8px;
+  gap: ${spacing[8]};
 `;
 
 const IssueCard = styled.div<{ $active: boolean; $resolved: boolean; }>`
-  ${typography.body}
   width: 100%;
-  border: 1px solid ${({ $active }) => ($active ? colors.forest : colors.border)};
-  border-radius: 10px;
+  border: ${spacing[1]} solid ${({ $active }) => ($active ? colors.forest[600] : colors.paper[300])};
+  border-radius: ${radius[12]};
   color: inherit;
-  background: ${({ $active, $resolved }) => ($resolved ? colors.forestPale : $active ? colors.surfaceStrong : colors.transparent)};
-  box-shadow: ${({ $active }) => ($active ? `0 4px 16px ${colors.issueShadow}` : "none")};
+  background: ${({ $active, $resolved }) => ($resolved ? colors.forest[100] : $active ? colors.paper[0] : alpha(colors.paper[0], 0))};
+  box-shadow: ${({ $active }) => ($active ? `0 ${spacing[4]} ${spacing[16]} ${alpha(colors.paper[900], 0.06)}` : "none")};
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 
-  &:hover { border-color: ${colors.borderStrong}; }
+  &:hover { border-color: ${colors.paper[400]}; }
 `;
 
 const IssueSummaryButton = styled(Button)`
-  ${typography.body}
   width: 100%;
-  padding: 13px;
+  padding: ${spacing[12]};
   border: 0;
   color: inherit;
-  background: ${colors.transparent};
+  background: ${alpha(colors.paper[0], 0)};
   text-align: left;
 `;
 
 const IssueTopline = styled(Label).attrs({ as: "div" })`
-  ${typography.body}
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s10};
+  gap: ${spacing[8]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[10]};
   white-space: nowrap;
   overflow: hidden;
 
@@ -325,197 +309,181 @@ const IssueTopline = styled(Label).attrs({ as: "div" })`
 `;
 
 const Severity = styled(Text).attrs({ as: "span" }) <{ $severity: string; }>`
-  ${typography.body}
   flex: 0 0 auto;
-  padding: 3px 6px;
-  border-radius: 4px;
-  color: ${({ $severity }) => ($severity === "high" ? colors.red : colors.forestDark)};
-  background: ${({ $severity }) => ($severity === "high" ? colors.redPale : colors.apricotPale)};
-  font-size: ${textSize.s9};
+  padding: ${spacing[4]} ${spacing[8]};
+  border-radius: ${radius[4]};
+  color: ${({ $severity }) => ($severity === "high" ? colors.error[600] : colors.forest[800])};
+  background: ${({ $severity }) => ($severity === "high" ? colors.error[100] : colors.apricot[100])};
+  font-size: ${fontSize[10]};
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 `;
 
 const IssueTitle = styled(Text).attrs({ as: "div" })`
-  ${typography.body}
-  margin-top: 9px;
-  font-size: ${textSize.s13};
+  margin-top: ${spacing[8]};
+  font-size: ${fontSize[14]};
   font-weight: 700;
 `;
 
 const IssueExpanded = styled.div`
-  ${typography.body}
-  padding: 0 13px 13px;
+  padding: 0 ${spacing[12]} ${spacing[12]};
 
-  > p { margin: 0; color: ${colors.inkMuted}; font-size: ${textSize.s12}; line-height: 1.5; }
+  > p { margin: 0; color: ${colors.paper[600]}; font-size: ${fontSize[12]}; line-height: 1.5; }
 `;
 
 const QuestionBlock = styled(Body).attrs({ as: "div" })`
-  ${typography.body}
-  margin-top: 11px;
-  padding: 11px;
-  border-left: 2px solid ${colors.apricot};
-  border-radius: 0 6px 6px 0;
-  background: ${colors.apricotPale};
-  font-size: ${textSize.s12};
+  margin-top: ${spacing[12]};
+  padding: ${spacing[12]};
+  border-left: ${spacing[2]} solid ${colors.apricot[400]};
+  border-radius: 0 ${radius[8]} ${radius[8]} 0;
+  background: ${colors.apricot[100]};
+  font-size: ${fontSize[12]};
   line-height: 1.45;
 `;
 
 const QuestionLabel = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   display: block;
-  margin-bottom: 4px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s9};
+  margin-bottom: ${spacing[4]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[10]};
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 `;
 
 const IssueActions = styled.div`
-  ${typography.body}
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 11px;
+  gap: ${spacing[8]};
+  margin-top: ${spacing[12]};
 `;
 
 const UserMessage = styled(Body).attrs({ as: "div" })`
-  ${typography.body}
   max-width: 88%;
-  margin: 14px 0 0 auto;
-  padding: 10px 12px;
-  border-radius: 10px 10px 2px 10px;
-  color: ${colors.white};
-  background: ${colors.forest};
-  font-size: ${textSize.s12};
+  margin: ${spacing[16]} 0 0 auto;
+  padding: ${spacing[12]} ${spacing[12]};
+  border-radius: ${radius[12]} ${radius[12]} ${radius[2]} ${radius[12]};
+  color: ${colors.paper[0]};
+  background: ${colors.forest[600]};
+  font-size: ${fontSize[12]};
   line-height: 1.45;
 `;
 
 const AssistantMessage = styled(Body).attrs({ as: "div" })`
-  ${typography.body}
   max-width: 92%;
-  margin-top: 14px;
-  padding: 10px 12px;
-  border: 1px solid ${colors.border};
-  border-radius: 2px 10px 10px 10px;
-  background: ${colors.surfaceStrong};
-  font-size: ${textSize.s12};
+  margin-top: ${spacing[16]};
+  padding: ${spacing[12]} ${spacing[12]};
+  border: ${spacing[1]} solid ${colors.paper[300]};
+  border-radius: ${radius[2]} ${radius[12]} ${radius[12]} ${radius[12]};
+  background: ${colors.paper[0]};
+  font-size: ${fontSize[12]};
   line-height: 1.5;
 `;
 
 const DiffLine = styled(Code).attrs({ as: "code" }) <{ $removed?: boolean; }>`
-  ${typography.body}
   display: block;
-  padding: 7px 8px;
-  border-radius: 5px;
-  color: ${({ $removed }) => ($removed ? colors.red : colors.forestDark)};
-  background: ${({ $removed }) => ($removed ? colors.redPale : colors.forestPale)};
-  font-size: ${textSize.s10};
+  padding: ${spacing[8]} ${spacing[8]};
+  border-radius: ${radius[4]};
+  color: ${({ $removed }) => ($removed ? colors.error[600] : colors.forest[800])};
+  background: ${({ $removed }) => ($removed ? colors.error[100] : colors.forest[100])};
+  font-size: ${fontSize[10]};
   line-height: 1.45;
   white-space: pre-wrap;
 `;
 
 const ErrorNotice = styled(Body).attrs({ as: "p" })`
-  ${typography.body}
-  margin: 14px 0 0;
-  padding: 10px;
-  border-radius: 7px;
-  color: ${colors.red};
-  background: ${colors.redPale};
-  font-size: ${textSize.s11};
+  margin: ${spacing[16]} 0 0;
+  padding: ${spacing[12]};
+  border-radius: ${radius[8]};
+  color: ${colors.error[600]};
+  background: ${colors.error[100]};
+  font-size: ${fontSize[12]};
   line-height: 1.45;
 `;
 
 const PaymentCard = styled.div`
-  ${typography.body}
   display: grid;
-  gap: 9px;
-  margin-top: 10px;
-  padding: 13px;
-  border: 1px solid ${colors.apricot};
-  border-radius: 9px;
-  background: ${colors.apricotPale};
-  font-size: ${textSize.s11};
+  gap: ${spacing[8]};
+  margin-top: ${spacing[12]};
+  padding: ${spacing[12]};
+  border: ${spacing[1]} solid ${colors.apricot[400]};
+  border-radius: ${radius[8]};
+  background: ${colors.apricot[100]};
+  font-size: ${fontSize[12]};
   line-height: 1.45;
 
-  span { color: ${colors.inkMuted}; }
+  span { color: ${colors.paper[600]}; }
 `;
 
 const SendButton = styled(Button)`
-  ${typography.body}
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: ${spacing[8]};
+  bottom: ${spacing[8]};
   display: grid;
-  width: 29px;
-  height: 29px;
+  width: ${spacing[32]};
+  height: ${spacing[32]};
   padding: 0;
   place-items: center;
   border: 0;
-  border-radius: 7px;
-  color: ${colors.white};
-  background: ${colors.forest};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[0]};
+  background: ${colors.forest[600]};
 
   &:disabled { cursor: default; opacity: 0.35; }
 `;
 
 const AnswerButton = styled(Button)`
-  ${typography.body}
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 7px 9px;
+  gap: ${spacing[4]};
+  padding: ${spacing[8]} ${spacing[8]};
   border: 0;
-  border-radius: 6px;
-  color: ${colors.white};
-  background: ${colors.forest};
-  font-size: ${textSize.s11};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[0]};
+  background: ${colors.forest[600]};
+  font-size: ${fontSize[12]};
   font-weight: 700;
 `;
 
 const EditCard = styled(Card)`
-  ${typography.body}
   display: grid;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 10px;
-  background: ${colors.surfaceStrong};
+  gap: ${spacing[8]};
+  margin-top: ${spacing[16]};
+  padding: ${spacing[12]};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[12]};
+  background: ${colors.paper[0]};
 `;
 
 const Composer = styled(Card)`
-  ${typography.body}
   position: relative;
-  margin: auto 14px 14px;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 10px;
-  background: ${colors.surfaceStrong};
+  margin: auto ${spacing[16]} ${spacing[16]};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[12]};
+  background: ${colors.paper[0]};
   box-shadow: ${shadows.soft};
 
   &:focus-within {
-    border-color: ${colors.forest};
-    box-shadow: 0 0 0 2px ${colors.forestPale};
+    border-color: ${colors.forest[600]};
+    box-shadow: 0 0 0 ${spacing[2]} ${colors.forest[100]};
   }
 `;
 
 const ComposerInput = styled(Textarea)`
-  ${typography.body}
   display: block;
   width: 100%;
-  min-height: 68px;
-  padding: 12px 43px 12px 12px;
+  min-height: ${spacing[64]};
+  padding: ${spacing[12]} ${spacing[40]} ${spacing[12]} ${spacing[12]};
   resize: none;
   border: 0;
-  color: ${colors.ink};
-  background: ${colors.transparent};
-  font-size: ${textSize.s12};
+  color: ${colors.paper[900]};
+  background: ${alpha(colors.paper[0], 0)};
+  font-size: ${fontSize[12]};
   line-height: 1.45;
 
-  &::placeholder { color: ${colors.placeholder}; }
+  &::placeholder { color: ${colors.paper[500]}; }
   &:focus-visible { outline: none; }
-  &:disabled { cursor: not-allowed; background: ${colors.disabledSurface}; }
+  &:disabled { cursor: not-allowed; background: ${colors.paper[200]}; }
 `;

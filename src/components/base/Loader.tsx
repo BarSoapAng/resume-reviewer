@@ -1,16 +1,16 @@
+import { colors, spacing, radius } from "../../lib/style";
 import styled, { keyframes } from "styled-components";
-import { colors } from "../../lib/style";
 
 const spin = keyframes`to { transform: rotate(360deg); }`;
 
 export const Loader = styled.span.attrs({ "aria-hidden": true })`
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  width: ${spacing[16]};
+  height: ${spacing[16]};
   flex-shrink: 0;
-  border: 2px solid ${colors.forestPale};
-  border-top-color: ${colors.forest};
-  border-radius: 50%;
+  border: ${spacing[2]} solid ${colors.forest[100]};
+  border-top-color: ${colors.forest[600]};
+  border-radius: ${radius.full};
   animation: ${spin} 800ms linear infinite;
   @media (prefers-reduced-motion: reduce) { animation: none; }
 `;

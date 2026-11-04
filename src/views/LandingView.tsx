@@ -1,7 +1,7 @@
+import { colors, fontSize, spacing, radius, breakpoints, fonts, shadows, Header, Body, Text, Label, Code } from "../lib/style";
 import { Textarea } from "../components/base/Textarea";
 import { Card } from "../components/base/Card";
 import styled from "styled-components";
-import { Body, Code, Header, Label, Text, breakpoints, colors, fonts, shadows, textSize, typography } from "../lib/style";
 import { Brand } from "../components/brand/Brand";
 import { QuietButton } from "../components/base/QuietButton";
 import { PrimaryButton } from "../components/base/PrimaryButton";
@@ -37,14 +37,14 @@ export function LandingView({ model }: {
           <ImportTabs>Paste LaTeX or upload a <Code>.tex</Code> file</ImportTabs>
           <ImportTextarea aria-label="LaTeX resume source" onChange={(event) => setLandingSource(event.target.value)} placeholder="\\documentclass{article}\n..." value={landingSource} />
           <ImportActions>
-            <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={15} /> Upload .tex</QuietButton>
+            <QuietButton onClick={() => landingFileInput.current?.click()}><Icon name="upload" size={spacing[16]} /> Upload .tex</QuietButton>
             <input ref={landingFileInput} accept=".tex,text/plain" hidden onChange={(event) => upload(event.target.files?.[0])} type="file" />
             <PrimaryButton disabled={!landingSource.trim()} onClick={() => {
               setSource(landingSource);
               setIsDemoResume(false);
               createCheckpoint("Initial paste", landingSource);
               setShowLanding(false);
-            }}>Review my resume <Icon name="arrow" size={15} /></PrimaryButton>
+            }}>Review my resume <Icon name="arrow" size={spacing[16]} /></PrimaryButton>
           </ImportActions>
         </ImportCard>
         <LandingPrivacy>Your source stays in this browser until you choose to sign in and start an AI review.</LandingPrivacy>
@@ -54,117 +54,107 @@ export function LandingView({ model }: {
 }
 
 const LandingShell = styled.main`
-  ${typography.body}
   min-height: 100vh;
-  color: ${colors.ink};
-  background: radial-gradient(circle at 50% 20%, ${colors.forestPale}, ${colors.canvas} 42%);
+  color: ${colors.paper[900]};
+  background: radial-gradient(circle at 50% 20%, ${colors.forest[100]}, ${colors.paper[200]} 42%);
 `;
 
 const LandingNav = styled.header`
-  ${typography.body}
   display: flex;
-  height: 64px;
+  height: ${spacing[64]};
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  border-bottom: 1px solid ${colors.border};
-  background: ${colors.navSurface};
+  padding: 0 ${spacing[24]};
+  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  background: ${colors.paper[100]};
 `;
 
 const LandingNote = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s11};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[12]};
 
   @media (max-width: ${breakpoints.mobile}) { display: none; }
 `;
 
 const LandingMain = styled.section`
-  ${typography.body}
   display: grid;
-  width: min(100% - 32px, 760px);
+  width: min(100% - ${spacing[32]}, ${spacing[768]});
   margin: 0 auto;
-  padding: 72px 0;
+  padding: ${spacing[64]} 0;
   justify-items: center;
   text-align: center;
 `;
 
 const LandingEyebrow = styled(Label).attrs({ as: "div" })`
-  ${typography.body}
-  color: ${colors.forest};
-  font-size: ${textSize.s11};
+  color: ${colors.forest[600]};
+  font-size: ${fontSize[12]};
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 `;
 
 const LandingTitle = styled(Header).attrs({ as: "h1" })`
-  ${typography.body}
-  max-width: 680px;
-  margin: 17px 0 13px;
+  max-width: ${spacing[640]};
+  margin: ${spacing[16]} 0 ${spacing[12]};
   font-family: ${fonts.heading};
-  font-size: ${textSize.hero};
+  font-size: ${fontSize[48]};
+
+  @media (max-width: ${breakpoints.mobile}) { font-size: ${fontSize[36]}; }
   line-height: 1.04;
   letter-spacing: -0.055em;
 `;
 
 const LandingCopy = styled(Body).attrs({ as: "p" })`
-  ${typography.body}
-  max-width: 590px;
+  max-width: ${spacing[640]};
   margin: 0;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s16};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[18]};
   line-height: 1.6;
 `;
 
 const ImportTabs = styled(Label).attrs({ as: "div" })`
-  ${typography.body}
-  padding: 2px 2px 11px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s11};
+  padding: ${spacing[2]} ${spacing[2]} ${spacing[12]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[12]};
   font-weight: 600;
 `;
 
 const ImportActions = styled.div`
-  ${typography.body}
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 12px;
+  gap: ${spacing[12]};
+  padding-top: ${spacing[12]};
 `;
 
 const LandingPrivacy = styled(Body).attrs({ as: "p" })`
-  ${typography.body}
-  max-width: 520px;
-  margin: 16px 0 0;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s10};
+  max-width: ${spacing[512]};
+  margin: ${spacing[16]} 0 0;
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[10]};
 `;
 
 const ImportCard = styled(Card)`
-  ${typography.body}
-  width: min(100%, 650px);
-  margin-top: 35px;
-  padding: 15px;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 14px;
-  background: ${colors.surfaceStrong};
+  width: min(100%, ${spacing[640]});
+  margin-top: ${spacing[32]};
+  padding: ${spacing[16]};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[16]};
+  background: ${colors.paper[0]};
   box-shadow: ${shadows.soft};
   text-align: left;
 `;
 
 const ImportTextarea = styled(Textarea)`
-  ${typography.body}
   width: 100%;
-  min-height: 190px;
-  padding: 13px;
+  min-height: ${spacing[192]};
+  padding: ${spacing[12]};
   resize: vertical;
-  border: 1px solid ${colors.border};
-  border-radius: 9px;
-  color: ${colors.code};
-  background: ${colors.editorSurface};
+  border: ${spacing[1]} solid ${colors.paper[300]};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[900]};
+  background: ${colors.paper[100]};
   font-family: ${fonts.mono};
-  font-size: ${textSize.s11};
+  font-size: ${fontSize[12]};
   line-height: 1.55;
 `;

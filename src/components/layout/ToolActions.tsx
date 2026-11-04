@@ -1,9 +1,8 @@
+import { spacing } from "../../lib/style";
 import styled from "styled-components";
-import { typography } from "../../lib/style";
 
 export const ToolActions = styled.div`
-  ${typography.body}
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: ${spacing[4]};
 `;

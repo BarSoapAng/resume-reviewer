@@ -1,10 +1,9 @@
+import { colors, fontSize, Body } from "../../lib/style";
 import styled from "styled-components";
-import { Body, colors, textSize, typography } from "../../lib/style";
 
 export const ReviewerCopy = styled(Body).attrs({ as: "p" })`
-  ${typography.body}
   margin: 0;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s13};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[14]};
   line-height: 1.55;
 `;

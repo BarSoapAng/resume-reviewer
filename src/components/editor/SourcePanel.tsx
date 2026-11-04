@@ -1,5 +1,5 @@
+import { colors, fontSize, spacing, fonts, Text, Code } from "../../lib/style";
 import styled from "styled-components";
-import { Code, Text, colors, fonts, textSize, typography } from "../../lib/style";
 import { PanelFrame } from "../layout/PanelFrame";
 import { ToolTitle } from "../layout/ToolTitle";
 import { ToolHeader } from "../layout/ToolHeader";
@@ -37,12 +37,12 @@ export function SourcePanel({ model }: {
   return (
     <PanelFrame $mobileActive={activeTab === "source"} aria-labelledby="workspace-tab-source" id="workspace-panel-source" role="tabpanel">
       <ToolHeader>
-        <ToolTitle><Icon name="code" size={16} /> Source</ToolTitle>
+        <ToolTitle><Icon name="code" size={spacing[16]} /> Source</ToolTitle>
         <ToolActions>
           {!reviewOpen && (
-            <QuietButton onClick={() => setReviewOpen(true)}><Icon name="message" size={15} /> Show review</QuietButton>
+            <QuietButton onClick={() => setReviewOpen(true)}><Icon name="message" size={spacing[16]} /> Show review</QuietButton>
           )}
-          <QuietButton onClick={() => fileInput.current?.click()}><Icon name="upload" size={15} /> Replace</QuietButton>
+          <QuietButton onClick={() => fileInput.current?.click()}><Icon name="upload" size={spacing[16]} /> Replace</QuietButton>
           <input
             ref={fileInput}
             accept=".tex,text/plain"
@@ -102,79 +102,72 @@ export function SourcePanel({ model }: {
 }
 
 const EditorMeta = styled.div`
-  ${typography.body}
   display: flex;
-  min-height: 36px;
+  min-height: ${spacing[40]};
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 13px;
-  border-bottom: 1px solid ${colors.border};
-  background: ${colors.editorToolbar};
+  gap: ${spacing[12]};
+  padding: 0 ${spacing[12]};
+  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  background: ${colors.paper[200]};
 `;
 
 const FileName = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   font-family: ${fonts.mono};
-  font-size: ${textSize.s10};
+  font-size: ${fontSize[10]};
   font-weight: 500;
 `;
 
 const SelectedAnchor = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   overflow: hidden;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s9};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[10]};
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
 const EditorWrap = styled.div`
-  ${typography.body}
   min-height: 0;
   flex: 1;
   overflow: hidden;
-  background: ${colors.editorSurface};
+  background: ${colors.paper[100]};
 
   .cm-theme, .cm-editor { height: 100%; }
   .cm-scroller { overflow: auto; font-family: ${fonts.mono}; }
-  .cm-content, .cm-gutter { font-size: ${textSize.s11}; line-height: 1.75; }
-  .cm-gutters { border-right: 1px solid ${colors.border}; color: ${colors.gutterText}; background: ${colors.canvas}; }
-  .cm-activeLine, .cm-activeLineGutter { background: ${colors.forestPale}; }
+  .cm-content, .cm-gutter { font-size: ${fontSize[12]}; line-height: 1.75; }
+  .cm-gutters { border-right: ${spacing[1]} solid ${colors.paper[300]}; color: ${colors.paper[500]}; background: ${colors.paper[200]}; }
+  .cm-activeLine, .cm-activeLineGutter { background: ${colors.forest[100]}; }
   .cm-focused { outline: none !important; }
-  .cm-cursor { border-left-color: ${colors.forest}; }
-  .cm-selectionBackground { background: ${colors.selection} !important; }
+  .cm-cursor { border-left-color: ${colors.forest[600]}; }
+  .cm-selectionBackground { background: ${colors.forest[200]} !important; }
 `;
 
 const EditorStatus = styled(Code).attrs({ as: "div" })`
-  ${typography.body}
   display: flex;
-  min-height: 25px;
+  min-height: ${spacing[24]};
   align-items: center;
   justify-content: flex-end;
-  gap: 14px;
-  padding: 0 12px;
-  border-top: 1px solid ${colors.border};
-  color: ${colors.inkMuted};
-  background: ${colors.surfaceStrong};
+  gap: ${spacing[16]};
+  padding: 0 ${spacing[12]};
+  border-top: ${spacing[1]} solid ${colors.paper[300]};
+  color: ${colors.paper[600]};
+  background: ${colors.paper[0]};
   font-family: ${fonts.mono};
-  font-size: ${textSize.s9};
+  font-size: ${fontSize[10]};
 `;
 
 const DiagnosticsPanel = styled.div`
-  ${typography.body}
-  max-height: 112px;
-  padding: 8px 12px;
+  max-height: ${spacing[128]};
+  padding: ${spacing[8]} ${spacing[12]};
   overflow: auto;
-  border-top: 1px solid ${colors.border};
-  background: ${colors.surfaceStrong};
+  border-top: ${spacing[1]} solid ${colors.paper[300]};
+  background: ${colors.paper[0]};
 `;
 
 const DiagnosticRow = styled(Code).attrs({ as: "div" }) <{ $severity: "error" | "warning"; }>`
-  ${typography.body}
-  padding: 3px 0;
-  color: ${({ $severity }) => ($severity === "error" ? colors.red : colors.inkMuted)};
+  padding: ${spacing[4]} 0;
+  color: ${({ $severity }) => ($severity === "error" ? colors.error[600] : colors.warning[800])};
   font-family: ${fonts.mono};
-  font-size: ${textSize.s9};
+  font-size: ${fontSize[10]};
   line-height: 1.4;
 `;

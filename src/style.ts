@@ -1,12 +1,13 @@
+import { colors, fontSize, spacing, fonts } from "./lib/style";
 import { createGlobalStyle } from "styled-components";
-import { colors, fonts, typography } from "./lib/style";
 
 export const GlobalStyle = createGlobalStyle`
 :root {
-  ${typography.body}
+  font-size: ${fontSize[14]};
+  line-height: 1.55;
   font-family: ${fonts.body};
-  color: ${colors.ink};
-  background: ${colors.canvas};
+  color: ${colors.paper[900]};
+  background: ${colors.paper[200]};
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,13 +21,14 @@ export const GlobalStyle = createGlobalStyle`
 html,
 body,
 #root {
-  min-width: 320px;
+  min-width: ${spacing[320]};
   min-height: 100%;
   margin: 0;
 }
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -38,7 +40,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid ${colors.forest};
-  outline-offset: 2px;
+  outline: ${spacing[2]} solid ${colors.forest[600]};
+  outline-offset: ${spacing[2]};
 }
 `;

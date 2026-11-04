@@ -1,8 +1,8 @@
+import { colors, fontSize, spacing, radius, alpha, Body } from "../../lib/style";
 import { Input } from "../base/Input";
 import { Button } from "../base/Button";
 import { Form } from "../base/Form";
 import styled from "styled-components";
-import { Body, colors, textSize, typography } from "../../lib/style";
 import { PanelTitle } from "../typography/PanelTitle";
 import { PanelEyebrow } from "../typography/PanelEyebrow";
 import { ReviewerCopy } from "../typography/ReviewerCopy";
@@ -49,74 +49,67 @@ export function AuthModal({ model }: {
 }
 
 const ModalBackdrop = styled.div`
-  ${typography.body}
   position: fixed;
   z-index: 50;
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 20px;
-  background: ${colors.overlay};
+  padding: ${spacing[24]};
+  background: ${alpha(colors.paper[900], 0.48)};
 `;
 
 const AuthDialog = styled.section`
-  ${typography.body}
   display: grid;
-  width: min(100%, 390px);
-  gap: 13px;
-  padding: 24px;
-  border-radius: 14px;
-  background: ${colors.surfaceStrong};
-  box-shadow: 0 24px 70px ${colors.modalShadow};
+  width: min(100%, ${spacing[384]});
+  gap: ${spacing[12]};
+  padding: ${spacing[24]};
+  border-radius: ${radius[16]};
+  background: ${colors.paper[0]};
+  box-shadow: 0 ${spacing[24]} ${spacing[64]} ${alpha(colors.paper[900], 0.25)};
 `;
 
 const AuthActions = styled(Form)`
-  ${typography.body}
   display: grid;
-  gap: 8px;
-  margin-top: 5px;
+  gap: ${spacing[8]};
+  margin-top: ${spacing[4]};
 `;
 
 const AuthMessage = styled(Body).attrs({ as: "p" })`
-  ${typography.body}
   margin: 0;
-  color: ${colors.forest};
-  font-size: ${textSize.s11};
+  color: ${colors.forest[600]};
+  font-size: ${fontSize[12]};
   line-height: 1.4;
 `;
 
 const AuthDivider = styled.div`
-  ${typography.body}
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: ${colors.inkMuted};
-  font-size: ${textSize.s9};
+  gap: ${spacing[8]};
+  color: ${colors.paper[600]};
+  font-size: ${fontSize[10]};
   text-transform: uppercase;
 
-  &::before, &::after { height: 1px; flex: 1; background: ${colors.border}; content: ""; }
+  &::before, &::after { height: ${spacing[1]}; flex: 1; background: ${colors.paper[300]}; content: ""; }
 `;
 
 const AuthButton = styled(Button)`
-  ${typography.body}
-  min-height: 40px;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 8px;
-  color: ${colors.ink};
-  background: ${colors.surfaceStrong};
-  font-size: ${textSize.s12};
+  min-height: ${spacing[40]};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[900]};
+  background: ${colors.paper[0]};
+  font-size: ${fontSize[12]};
   font-weight: 700;
 
-  &:hover { border-color: ${colors.forest}; background: ${colors.forestPale}; }
+  &:hover { border-color: ${colors.forest[600]}; background: ${colors.forest[100]}; }
 `;
 
 const AuthEmailInput = styled(Input)`
-  ${typography.body}
-  min-height: 40px;
-  padding: 0 11px;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 8px;
-  color: ${colors.ink};
-  background: ${colors.surfaceStrong};
-  font-size: ${textSize.s12};
+  min-height: ${spacing[40]};
+  padding: 0 ${spacing[12]};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[900]};
+  background: ${colors.paper[0]};
+  font-size: ${fontSize[12]};
 `;

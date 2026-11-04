@@ -1,6 +1,6 @@
+import { colors, fontSize, spacing, radius, breakpoints, fonts, alpha, shadows, Header2, Text, Strong, Emphasis, Small, ListItem } from "../../lib/style";
 import { Loader } from "../base/Loader";
 import styled from "styled-components";
-import { Emphasis, Header2, ListItem, Small, Strong, Text, breakpoints, colors, fonts, shadows, textSize, typography } from "../../lib/style";
 import { PanelFrame } from "../layout/PanelFrame";
 import { ToolTitle } from "../layout/ToolTitle";
 import { ToolHeader } from "../layout/ToolHeader";
@@ -28,9 +28,9 @@ export function PreviewPanel({ model }: {
         <ToolTitle>Preview</ToolTitle>
         <ToolActions>
           <CompileButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
-            {compileState === "compiling" ? <Loader /> : <Icon name="play" size={14} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
+            {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing[16]} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
           </CompileButton>
-          <DownloadIconLink aria-label="Download PDF" download="resume.pdf" href={pdfUrl} $disabled={!pdfUrl} onClick={(event) => { if (!pdfUrl) event.preventDefault(); }} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={16} /></DownloadIconLink>
+          <DownloadIconLink aria-label="Download PDF" download="resume.pdf" href={pdfUrl} $disabled={!pdfUrl} onClick={(event) => { if (!pdfUrl) event.preventDefault(); }} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={spacing[16]} /></DownloadIconLink>
         </ToolActions>
       </ToolHeader>
       <PreviewCanvas>
@@ -38,7 +38,7 @@ export function PreviewPanel({ model }: {
           <PdfFrame src={pdfUrl} title="Compiled resume PDF" />
         ) : !isDemoResume ? (
           <PreviewUnavailable>
-            <PreviewUnavailableIcon><Icon name="code" size={20} /></PreviewUnavailableIcon>
+            <PreviewUnavailableIcon><Icon name="code" size={spacing[24]} /></PreviewUnavailableIcon>
             <Strong>{compileState === "compiling" ? "Compiling resume" : "Preview unavailable"}</Strong>
             <Text>{compileError ?? "Start the compiler service, then retry. Your LaTeX source is still saved locally."}</Text>
           </PreviewUnavailable>
@@ -75,162 +75,155 @@ export function PreviewPanel({ model }: {
 }
 
 const DownloadIconLink = styled.a<{ $disabled: boolean; }>`
-  ${typography.body}
   display: grid;
-  width: 32px;
-  height: 32px;
+  width: ${spacing[32]};
+  height: ${spacing[32]};
   place-items: center;
-  border-radius: 7px;
-  color: ${colors.inkMuted};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[600]};
   opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
   pointer-events: ${({ $disabled }) => ($disabled ? "none" : "auto")};
 
-  &:hover { background: ${colors.surfaceStrong}; color: ${colors.ink}; }
+  &:hover { background: ${colors.paper[0]}; color: ${colors.paper[900]}; }
 `;
 
 const CompileButton = styled(QuietButton)`
-  color: ${colors.forestDark};
-  background: ${colors.forestPale};
+  color: ${colors.forest[800]};
+  background: ${colors.forest[100]};
 
   &:disabled { cursor: wait; opacity: 0.7; }
 `;
 
 const PreviewCanvas = styled.div`
-  ${typography.body}
   min-height: 0;
   flex: 1;
-  padding: 25px;
+  padding: ${spacing[24]};
   overflow: auto;
-  background-color: ${colors.previewCanvas};
-  background-image: radial-gradient(${colors.previewDot} 0.7px, transparent 0.7px);
-  background-size: 12px 12px;
+  background-color: ${colors.paper[300]};
+  background-image: radial-gradient(${colors.paper[400]} ${spacing[1]}, ${alpha(colors.paper[0], 0)} ${spacing[1]});
+  background-size: ${spacing[12]} ${spacing[12]};
 
-  @media (max-width: ${breakpoints.mobile}) { padding: 14px; }
+  @media (max-width: ${breakpoints.mobile}) { padding: ${spacing[16]}; }
 `;
 
 const PdfFrame = styled.iframe`
-  ${typography.body}
   display: block;
-  width: min(100%, 760px);
+  width: min(100%, ${spacing[768]});
   height: 100%;
-  min-height: 620px;
+  min-height: ${spacing[640]};
   margin: 0 auto;
   border: 0;
-  background: ${colors.white};
+  background: ${colors.paper[0]};
   box-shadow: ${shadows.paper};
 `;
 
 const PreviewUnavailable = styled.div`
-  ${typography.body}
   display: flex;
-  width: min(100%, 360px);
-  min-height: 230px;
-  margin: 60px auto;
+  width: min(100%, ${spacing[384]});
+  min-height: ${spacing[256]};
+  margin: ${spacing[64]} auto;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 9px;
-  padding: 32px;
-  border: 1px solid ${colors.borderStrong};
-  border-radius: 12px;
-  color: ${colors.ink};
-  background: ${colors.previewSurface};
+  gap: ${spacing[8]};
+  padding: ${spacing[32]};
+  border: ${spacing[1]} solid ${colors.paper[400]};
+  border-radius: ${radius[12]};
+  color: ${colors.paper[900]};
+  background: ${colors.paper[100]};
   text-align: center;
 
-  strong { font-size: ${textSize.s14}; }
-  span { max-width: 260px; color: ${colors.inkMuted}; font-size: ${textSize.s12}; line-height: 1.5; }
+  strong { font-size: ${fontSize[14]}; }
+  span { max-width: ${spacing[256]}; color: ${colors.paper[600]}; font-size: ${fontSize[12]}; line-height: 1.5; }
 `;
 
 const PreviewUnavailableIcon = styled.div`
-  ${typography.body}
   display: grid;
-  width: 40px;
-  height: 40px;
-  margin-bottom: 3px;
+  width: ${spacing[40]};
+  height: ${spacing[40]};
+  margin-bottom: ${spacing[4]};
   place-items: center;
-  border-radius: 10px;
-  color: ${colors.forest};
-  background: ${colors.forestPale};
+  border-radius: ${radius[12]};
+  color: ${colors.forest[600]};
+  background: ${colors.forest[100]};
 `;
 
 const Paper = styled.article`
-  ${typography.resume}
-  position: relative;
-  width: min(100%, 520px);
-  min-height: 690px;
-  margin: 0 auto;
-  padding: 42px 40px;
-  color: ${colors.resumeInk};
-  background: ${colors.white};
-  box-shadow: ${shadows.paper};
   font-family: ${fonts.resume};
+  position: relative;
+  width: min(100%, ${spacing[512]});
+  min-height: ${spacing[640]};
+  margin: 0 auto;
+  padding: ${spacing[40]} ${spacing[40]};
+  color: ${colors.paper[900]};
+  background: ${colors.paper[0]};
+  box-shadow: ${shadows.paper};
 
-  @media (max-width: ${breakpoints.mobile}) { padding: 28px 24px; }
+  @media (max-width: ${breakpoints.mobile}) { padding: ${spacing[32]} ${spacing[24]}; }
 `;
 
 const PreviewBadge = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  color: ${colors.inkMuted};
-  background: ${colors.canvas};
+  top: ${spacing[12]};
+  right: ${spacing[12]};
+  padding: ${spacing[4]} ${spacing[8]};
+  border-radius: ${radius[4]};
+  color: ${colors.paper[600]};
+  background: ${colors.paper[200]};
   font-family: ${fonts.body};
-  font-size: ${textSize.s7};
+  font-size: ${fontSize[8]};
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 `;
 
 const ResumeName = styled(Header2).attrs({ as: "h2" })`
-  ${typography.resume}
+  font-family: ${fonts.resume};
   margin: 0;
   text-align: center;
-  font-size: ${textSize.s21};
+  font-size: ${fontSize[24]};
   letter-spacing: 0.08em;
 `;
 
 const ContactLine = styled(Text).attrs({ as: "div" })`
-  ${typography.resume}
-  margin-top: 6px;
+  font-family: ${fonts.resume};
+  margin-top: ${spacing[8]};
   text-align: center;
-  font-size: ${textSize.s7_5};
+  font-size: ${fontSize[8]};
 `;
 
 const ResumeSection = styled(Header2).attrs({ as: "h3" })`
-  ${typography.resume}
-  margin: 17px 0 7px;
-  padding-bottom: 3px;
-  border-bottom: 1px solid ${colors.resumeRule};
-  font-size: ${textSize.s10};
+  font-family: ${fonts.resume};
+  margin: ${spacing[16]} 0 ${spacing[8]};
+  padding-bottom: ${spacing[4]};
+  border-bottom: ${spacing[1]} solid ${colors.paper[900]};
+  font-size: ${fontSize[10]};
   letter-spacing: 0.08em;
 `;
 
 const RoleLine = styled(Text).attrs({ as: "div" }) <{ $muted?: boolean; }>`
-  ${typography.resume}
+  font-family: ${fonts.resume};
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: ${({ $muted }) => ($muted ? "2px" : "0")};
-  font-size: ${({ $muted }) => ($muted ? textSize.s8 : textSize.s8_5)};
+  gap: ${spacing[12]};
+  margin-top: ${({ $muted }) => ($muted ? spacing[2] : "0")};
+  font-size: ${fontSize[8]};
 
-  small { font-size: ${textSize.s7_5}; font-weight: 400; }
+  small { font-size: ${fontSize[8]}; font-weight: 400; }
   span { flex: 0 0 auto; }
 `;
 
 const ResumeList = styled.ul`
-  ${typography.resume}
-  margin: 5px 0 0;
-  padding-left: 13px;
-  font-size: ${textSize.s7_5};
+  font-family: ${fonts.resume};
+  margin: ${spacing[4]} 0 0;
+  padding-left: ${spacing[12]};
+  font-size: ${fontSize[8]};
   line-height: 1.55;
 `;
 
 const SkillsLine = styled(Text).attrs({ as: "div" })`
-  ${typography.resume}
-  margin-top: 4px;
-  font-size: ${textSize.s7_5};
+  font-family: ${fonts.resume};
+  margin-top: ${spacing[4]};
+  font-size: ${fontSize[8]};
 `;

@@ -1,14 +1,13 @@
+import { colors, spacing } from "../../lib/style";
 import styled from "styled-components";
-import { colors, typography } from "../../lib/style";
 
 export const ToolHeader = styled.div`
-  ${typography.body}
   display: flex;
-  min-height: 48px;
+  min-height: ${spacing[48]};
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 12px 0 15px;
-  border-bottom: 1px solid ${colors.border};
-  background: ${colors.surfaceStrong};
+  gap: ${spacing[12]};
+  padding: 0 ${spacing[12]} 0 ${spacing[16]};
+  border-bottom: ${spacing[1]} solid ${colors.paper[300]};
+  background: ${colors.paper[0]};
 `;

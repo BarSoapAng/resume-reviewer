@@ -1,13 +1,12 @@
+import { colors, fontSize, spacing, radius, fonts, Text } from "../../lib/style";
 import { Icon } from "../base/Icon";
 import styled from "styled-components";
-import { Text, colors, fonts, textSize, typography } from "../../lib/style";
 
 const BrandRoot = styled.div`
-  ${typography.body}
   display: inline-flex;
   align-items: center;
   justify-self: start;
-  gap: 9px;
+  gap: ${spacing[8]};
   padding: 0;
   border: 0;
   color: inherit;
@@ -15,25 +14,23 @@ const BrandRoot = styled.div`
 `;
 
 export function Brand() {
-  return <BrandRoot><BrandMark><Icon name="sparkles" size={17} /></BrandMark><BrandName>Aria</BrandName></BrandRoot>;
+  return <BrandRoot><BrandMark><Icon name="sparkles" size={spacing[16]} /></BrandMark><BrandName>Aria</BrandName></BrandRoot>;
 }
 
 const BrandName = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   font-family: ${fonts.heading};
-  font-size: ${textSize.s19};
+  font-size: ${fontSize[18]};
   font-weight: 700;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.025em;
 `;
 
 const BrandMark = styled(Text).attrs({ as: "span" })`
-  ${typography.body}
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: ${spacing[32]};
+  height: ${spacing[32]};
   place-items: center;
-  border-radius: 9px;
-  color: ${colors.white};
-  background: ${colors.forest};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[0]};
+  background: ${colors.forest[600]};
 `;
 

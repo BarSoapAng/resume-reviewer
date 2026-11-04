@@ -1,86 +1,68 @@
-import styled, { css } from "styled-components";
+import styled from "styled-components";
 
 export const colors = {
-  modalShadow: "rgba(20, 24, 20, 0.25)",
-  overlay: "rgba(24, 29, 24, 0.48)",
-  resumeRule: "#222",
-  resumeInk: "#10110f",
-  previewSurface: "rgba(251, 251, 248, 0.92)",
-  previewDot: "#cacbc3",
-  previewCanvas: "#e5e5de",
-  selection: "#ccded1",
-  canvas: "#f4f4ef",
-  gutterText: "#a2a59b",
-  editorToolbar: "#f7f7f3",
-  disabledSurface: "#f5f5f1",
-  placeholder: "#9a9c94",
-  issueShadow: "rgba(35, 37, 31, 0.06)",
-  editorSurface: "#fafaf7",
-  navSurface: "rgba(251, 251, 248, 0.85)",
-  transparent: "transparent",
-  white: "#ffffff",
-  ink: "#23251f",
-  inkMuted: "#6f7269",
-  surface: "#fbfbf8",
-  surfaceStrong: "#ffffff",
-  border: "#dedfd7",
-  borderStrong: "#c8cabf",
-  forest: "#345b43",
-  forestDark: "#244332",
-  forestPale: "#e5eee7",
-  apricot: "#efb178",
-  apricotPale: "#fff0df",
-  yellow: "#f4d567",
-  red: "#b55249",
-  redPale: "#f9e9e6",
-  code: "#1f231f",
-  codeMuted: "#7f887e",
-  codeGreen: "#a9d8b3",
+  paper: { 0: "#ffffff", 100: "#fbfbf8", 200: "#f4f4ef", 300: "#dedfd7", 400: "#c8cabf", 500: "#9a9c94", 600: "#6f7269", 900: "#23251f" },
+  forest: { 100: "#e5eee7", 200: "#ccded1", 600: "#345b43", 800: "#244332" },
+  apricot: { 100: "#fff0df", 400: "#efb178" },
+  error: { 100: "#f9e9e6", 600: "#b55249" },
+  warning: { 100: "#fff0df", 400: "#f4d567", 800: "#765312" },
 };
 
-export const shadows = {
-  soft: "0 10px 30px rgba(44, 48, 38, 0.08)",
-  paper: "0 8px 28px rgba(35, 37, 31, 0.13)",
+export const fontSize = {
+  8: "8px", 10: "10px", 12: "12px", 14: "14px", 18: "18px",
+  24: "24px", 36: "36px", 48: "48px", 72: "72px",
 };
 
-export const breakpoints = {
-  tablet: "980px",
-  mobile: "640px",
+// One scale for spacing and dimensions, including larger layout constraints.
+export const spacing = {
+  0: "0px", 1: "1px", 2: "2px", 4: "4px", 8: "8px", 12: "12px",
+  16: "16px", 24: "24px", 32: "32px", 40: "40px", 48: "48px",
+  64: "64px", 96: "96px", 128: "128px", 192: "192px", 256: "256px",
+  320: "320px", 384: "384px", 512: "512px", 640: "640px", 768: "768px",
 };
 
+export const radius = { 0: "0px", 2: "2px", 4: "4px", 8: "8px", 12: "12px", 16: "16px", full: "50%", pill: "9999px" };
+export const breakpoints = { mobile: spacing[640], tablet: "980px" };
 export const fonts = { heading: '"Manrope", sans-serif', body: '"DM Sans", sans-serif', mono: '"DM Mono", monospace', resume: "Georgia, serif" };
-export const textSize = {
-  s8: "8px",
-  s8_5: "8.5px",
-  s7: "7px",
-  s7_5: "7.5px",
-  s9: "9px",
-  s10: "10px",
-  s11: "11px",
-  s12: "12px",
-  s13: "13px",
-  s14: "14px",
-  s16: "16px",
-  s19: "19px",
-  s20: "20px",
-  s21: "21px",
-  hero: "clamp(36px, 6vw, 58px)",
+
+export const alpha = (color: string, opacity: number) => `color-mix(in srgb, ${color} ${opacity * 100}%, transparent)`;
+export const shadows = {
+  soft: `0 ${spacing[8]} ${spacing[32]} ${alpha(colors.paper[900], 0.08)}`,
+  paper: `0 ${spacing[8]} ${spacing[32]} ${alpha(colors.paper[900], 0.13)}`,
+  raised: `0 ${spacing[24]} ${spacing[64]} ${alpha(colors.paper[900], 0.25)}`,
 };
 
-export const typography = {
-  resume: css`font-family: ${fonts.resume}; line-height: 1.55;`,
-  body: css`font-family: ${fonts.body}; font-size: 14px; line-height: 1.55;`,
-  header: css`font-family: ${fonts.heading}; font-size: 36px; font-weight: 700; line-height: 1.1;`,
-  header2: css`font-family: ${fonts.heading}; font-size: 20px; font-weight: 700; line-height: 1.2;`,
-  label: css`font-family: ${fonts.body}; font-size: 12px; font-weight: 600;`,
-  code: css`font-family: ${fonts.mono}; font-size: 13px; line-height: 1.6;`,
-};
-export const Header = styled.h1`${typography.header} margin: 0;`;
-export const Header2 = styled.h2`${typography.header2} margin: 0;`;
-export const Body = styled.p`${typography.body} margin: 0;`;
+export const Header = styled.h1`
+  margin: 0;
+  font-family: ${fonts.heading};
+  font-size: ${fontSize[36]};
+  font-weight: 700;
+  line-height: 1.1;
+`;
+export const Header2 = styled.h2`
+  margin: 0;
+  font-family: ${fonts.heading};
+  font-size: ${fontSize[24]};
+  font-weight: 700;
+  line-height: 1.2;
+`;
+export const Body = styled.p`
+  margin: 0;
+  font-family: ${fonts.body};
+  font-size: ${fontSize[14]};
+  line-height: 1.55;
+`;
 export const Text = styled.span`font: inherit;`;
-export const Label = styled.span`${typography.label}`;
-export const Code = styled.code`${typography.code}`;
+export const Label = styled.span`
+  font-family: ${fonts.body};
+  font-size: ${fontSize[12]};
+  font-weight: 600;
+`;
+export const Code = styled.code`
+  font-family: ${fonts.mono};
+  font-size: ${fontSize[14]};
+  line-height: 1.6;
+`;
 export const Strong = styled.strong`font: inherit; font-weight: 700;`;
 export const Emphasis = styled.em`font: inherit; font-style: italic;`;
 export const Small = styled.small`font: inherit;`;

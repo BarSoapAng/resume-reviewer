@@ -1,11 +1,10 @@
+import { fontSize, fonts, Header } from "../../lib/style";
 import styled from "styled-components";
-import { Header, fonts, textSize, typography } from "../../lib/style";
 
 export const PanelTitle = styled(Header).attrs({ as: "h1" })`
-  ${typography.body}
   margin: 0;
   font-family: ${fonts.heading};
-  font-size: ${textSize.s20};
+  font-size: ${fontSize[18]};
   line-height: 1.2;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.025em;
 `;

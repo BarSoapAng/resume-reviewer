@@ -1,21 +1,20 @@
+import { colors, fontSize, spacing, radius } from "../../lib/style";
 import styled from "styled-components";
-import { colors, textSize, typography } from "../../lib/style";
 import { Button } from "./Button";
 
 export const PrimaryButton = styled(Button)`
-  ${typography.body}
   display: inline-flex;
-  height: 34px;
+  height: ${spacing[32]};
   align-items: center;
-  gap: 7px;
-  padding: 0 12px;
+  gap: ${spacing[8]};
+  padding: 0 ${spacing[12]};
   border: 0;
-  border-radius: 7px;
-  color: ${colors.white};
-  background: ${colors.forest};
-  font-size: ${textSize.s11};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[0]};
+  background: ${colors.forest[600]};
+  font-size: ${fontSize[12]};
   font-weight: 700;
 
-  &:hover { background: ${colors.forestDark}; }
+  &:hover { background: ${colors.forest[800]}; }
   &:disabled { cursor: not-allowed; opacity: 0.45; }
 `;

@@ -1,7 +1,6 @@
+import { colors } from "../../lib/style";
 import styled from "styled-components";
-import { colors, typography } from "../../lib/style";
 
 export const Input = styled.input`
-  ${typography.body}
-  color: ${colors.ink};
+  color: ${colors.paper[900]};
 `;

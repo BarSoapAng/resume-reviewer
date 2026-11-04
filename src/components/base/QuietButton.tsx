@@ -1,20 +1,19 @@
+import { colors, fontSize, spacing, radius, alpha } from "../../lib/style";
 import styled from "styled-components";
-import { colors, textSize, typography } from "../../lib/style";
 import { Button } from "./Button";
 
 export const QuietButton = styled(Button)`
-  ${typography.body}
   display: inline-flex;
-  height: 31px;
+  height: ${spacing[32]};
   align-items: center;
-  gap: 6px;
-  padding: 0 9px;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  color: ${colors.inkMuted};
-  background: ${colors.transparent};
-  font-size: ${textSize.s11};
+  gap: ${spacing[8]};
+  padding: 0 ${spacing[8]};
+  border: ${spacing[1]} solid ${alpha(colors.paper[0], 0)};
+  border-radius: ${radius[8]};
+  color: ${colors.paper[600]};
+  background: ${alpha(colors.paper[0], 0)};
+  font-size: ${fontSize[12]};
   font-weight: 600;
 
-  &:hover { border-color: ${colors.border}; background: ${colors.surfaceStrong}; color: ${colors.ink}; }
+  &:hover { border-color: ${colors.paper[300]}; background: ${colors.paper[0]}; color: ${colors.paper[900]}; }
 `;
