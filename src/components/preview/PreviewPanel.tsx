@@ -5,7 +5,7 @@ import styled from "styled-components";
 import { PanelFrame } from "../layout/PanelFrame";
 import { ToolTitle } from "../layout/ToolTitle";
 import { ToolHeader } from "../layout/ToolHeader";
-import { QuietButton } from "../base/QuietButton";
+import { PrimaryButton } from "../base/PrimaryButton";
 import { ToolActions } from "../layout/ToolActions";
 import type { WorkspaceModel } from "../../hooks/useResumeWorkspace";
 import { Icon } from "../base/Icon";
@@ -28,9 +28,9 @@ export function PreviewPanel({ model }: {
       <ToolHeader>
         <ToolTitle><Icon name="preview" size={spacing.md} /> Preview</ToolTitle>
         <ToolActions>
-          <CompileButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
+          <PrimaryButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
             {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing.md} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
-          </CompileButton>
+          </PrimaryButton>
           <IconButton aria-label="Download PDF" disabled={!pdfUrl} onClick={() => void downloadPdf()} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={spacing.md} /></IconButton>
         </ToolActions>
       </ToolHeader>
@@ -74,13 +74,6 @@ export function PreviewPanel({ model }: {
     </PanelFrame>
   );
 }
-
-const CompileButton = styled(QuietButton)`
-  color: ${colors.forest[800]};
-  background: ${colors.forest[100]};
-
-  &:disabled { cursor: wait; opacity: 0.7; }
-`;
 
 const PreviewCanvas = styled.div<{ $unavailable: boolean }>`
   display: ${({ $unavailable }) => $unavailable ? "grid" : "block"};
