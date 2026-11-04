@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { colors, fontSize, spacing, radius, alpha, shadows, Body, Text, Strong } from "../../lib/style";
+import { colors, fontSize, spacing, radius, breakpoints, alpha, shadows, Body, Text, Strong } from "../../lib/style";
 import { Button } from "../base/Button";
 import styled from "styled-components";
 import { IconButton } from "../base/IconButton";
@@ -102,6 +102,13 @@ const DocumentTitle = styled(Button)`
   text-align: center;
   span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   svg { flex-shrink: 0; }
+  @media (max-width: ${breakpoints.mobile}) {
+    top: 0;
+    height: ${spacing.lg};
+    max-width: calc(100% - ${spacing.lg});
+    padding: 0 ${spacing.xxs};
+    font-size: ${fontSize.xs};
+  }
 `;
 const TitleEditor = styled.div`
   position: absolute;
@@ -112,6 +119,13 @@ const TitleEditor = styled.div`
   max-width: max(0px, calc(100% - 2 * (var(--header-actions-width, 160px) + ${spacing.lg})));
   align-items: center;
   font-size: ${fontSize.sm};
+  @media (max-width: ${breakpoints.mobile}) {
+    top: 0;
+    height: ${spacing.lg};
+    width: min(calc(100% - ${spacing.lg}), ${spacing["10xl"]});
+    max-width: calc(100% - ${spacing.lg});
+    font-size: ${fontSize.xs};
+  }
 `;
 const TitleInput = styled.input`
   min-width: 0;
@@ -121,12 +135,22 @@ const TitleInput = styled.input`
   border: ${spacing.hairline} solid ${colors.paper[400]};
   border-radius: ${radius.xs};
   font-size: ${fontSize.sm};
+  @media (max-width: ${breakpoints.mobile}) {
+    height: calc(${spacing.lg} - ${spacing.xxxs});
+    padding: 0 ${spacing.xxs};
+    font-size: ${fontSize.xs};
+  }
 `;
 const SaveActions = styled.div`
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: flex-end;
+  @media (max-width: ${breakpoints.mobile}) {
+    flex-direction: row;
+    align-items: center;
+    gap: ${spacing.xs};
+  }
 `;
 const HeaderActions = styled.div`
   display: flex;
@@ -134,6 +158,11 @@ const HeaderActions = styled.div`
   align-items: center;
   gap: ${spacing.xxs};
   justify-self: end;
+  @media (max-width: ${breakpoints.mobile}) {
+    align-self: flex-end;
+    height: ${spacing.lg};
+    > button { width: ${spacing.lg}; height: ${spacing.lg}; }
+  }
 `;
 const HistoryPopover = styled.div`
   position: fixed;
