@@ -28,7 +28,7 @@ services:
 
 networks:
   compiler-internal:
-    internal: true
+    internal: ${COMPILER_INTERNAL_NETWORK:-false}
 
 volumes:
   compiler-cache:
