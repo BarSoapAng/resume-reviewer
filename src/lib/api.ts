@@ -1,4 +1,5 @@
 import { getSession } from "./supabase";
+import type { QuestionSubmission, ReviewStreamEvent, WorkspaceVersion } from "../../packages/reviewer/src/conversation";
 
 export type Discipline = "software" | "mechanical";
 export type ReviewState =
@@ -62,6 +63,56 @@ export type CompileResult = {
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "";
 
+function safeApiMessage(status: number) {
+  return status === 401 ? "Please sign in to start your review." : status === 402 ? "A payment is needed to start this review." : status === 422 ? "Please check your source or answers and try again." : "We couldn’t complete this request. Please try again.";
+}
+
+export async function readReviewStream(response: Response, onEvent: (event: ReviewStreamEvent<ReviewTurn & { id?: string }>) => void) {
+  if (!response.ok) throw new ApiError(response.status, safeApiMessage(response.status));
+  if (!response.body) throw new Error("The review connection was interrupted. Try sending your message again.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "", finalized = false;
+  const seen = new Set<string>();
+  let turnId: string | undefined;
+  const consume = (line: string) => {
+    if (!line.trim()) return;
+    const event = JSON.parse(line) as ReviewStreamEvent<ReviewTurn>;
+    if (!event.eventId || !event.turnId || (turnId && event.turnId !== turnId)) throw new Error("Invalid review stream");
+    turnId = event.turnId;
+    if (seen.has(event.eventId)) return;
+    seen.add(event.eventId);
+    if (event.type === "error") throw new Error("The review connection was interrupted. Try sending your message again.");
+    if (finalized) throw new Error("Invalid review stream order");
+    if (event.type === "turn_final") finalized = true;
+    onEvent(event);
+  };
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      buffer += decoder.decode(value, { stream: !done });
+      let newline: number;
+      while ((newline = buffer.indexOf("\n")) >= 0) { consume(buffer.slice(0, newline)); buffer = buffer.slice(newline + 1); }
+      if (done) break;
+    }
+    consume(buffer);
+    if (!finalized) throw new Error("The review connection was interrupted. Try sending your message again.");
+  } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
+}
+
+export async function streamReview(path: string, input: { turnId: string; content?: string; questions?: QuestionSubmission }, onEvent: Parameters<typeof readReviewStream>[1], signal?: AbortSignal) {
+  const session = await getSession();
+  const response = await fetch(`${baseUrl}${path}`, { method: "POST", signal, headers: {
+    "Content-Type": "application/json", Accept: "application/x-ndjson",
+    ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+  }, body: JSON.stringify(input) });
+  await readReviewStream(response, onEvent);
+}
+
+export function listProjectVersions(projectId: string) {
+  return request<WorkspaceVersion[]>(`/api/projects/${projectId}/versions`);
+}
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -80,10 +131,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    const detail = await response.text();
-    let message = detail;
-    try { message = (JSON.parse(detail) as { error?: string }).error ?? detail; } catch { /* use response text */ }
-    throw new ApiError(response.status, message || `Request failed (${response.status})`);
+    throw new ApiError(response.status, safeApiMessage(response.status));
   }
 
   return response.json() as Promise<T>;
@@ -103,7 +151,7 @@ export async function createProject(title: string, discipline: Discipline, sourc
   });
 }
 
-export async function updateProject(projectId: string, patch: { title?: string; discipline?: Discipline; source?: string }) {
+export async function updateProject(projectId: string, patch: { title?: string; discipline?: Discipline; source?: string; version?: Pick<WorkspaceVersion, "id" | "reason" | "kind" | "restoredFromId" | "createdAt"> }) {
   return request<{ id: string; currentSource: string }>(`/api/projects/${projectId}`, {
     method: "PATCH",
     body: JSON.stringify(patch),
