@@ -3,7 +3,10 @@ import styled from "styled-components";
 
 export const ToolHeader = styled.div`
   display: flex;
-  min-height: ${spacing.xxxl};
+  height: ${spacing.xxl};
+  min-height: ${spacing.xxl};
+  min-width: 0;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: ${spacing.sm};

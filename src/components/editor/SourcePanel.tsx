@@ -3,20 +3,20 @@ import styled from "styled-components";
 import { PanelFrame } from "../layout/PanelFrame";
 import { ToolTitle } from "../layout/ToolTitle";
 import { ToolHeader } from "../layout/ToolHeader";
-import { QuietButton } from "../base/QuietButton";
+import { TextButton } from "../base/TextButton";
+import { IconButton } from "../base/IconButton";
 import { ToolActions } from "../layout/ToolActions";
 import type { WorkspaceModel } from "../../hooks/useResumeWorkspace";
 import { Icon } from "../base/Icon";
 import CodeMirror from "@uiw/react-codemirror";
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
-import { EditorView } from "@codemirror/view";
 import { searchKeymap } from "@codemirror/search";
 import { keymap } from "@codemirror/view";
 
 export function SourcePanel({ model }: {
   model: Pick<WorkspaceModel,
-    "activeTab" | "compileError" | "diagnostics" | "editor" | "fileInput" | "reviewOpen" | "selectedIssue" | "setEdits" | "setIsDemoResume" | "setReviewOpen" | "setSource" | "source" | "upload"
+    "activeTab" | "compileError" | "diagnostics" | "editor" | "fileInput" | "setEdits" | "setIsDemoResume" | "setSource" | "source" | "upload" | "downloadSource"
   >;
 }) {
   const {
@@ -25,24 +25,20 @@ export function SourcePanel({ model }: {
     diagnostics,
     editor,
     fileInput,
-    reviewOpen,
-    selectedIssue,
     setEdits,
     setIsDemoResume,
-    setReviewOpen,
     setSource,
     source,
     upload,
+    downloadSource,
   } = model;
   return (
     <PanelFrame $mobileActive={activeTab === "source"} aria-labelledby="workspace-tab-source" id="workspace-panel-source" role="tabpanel">
       <ToolHeader>
         <ToolTitle><Icon name="code" size={spacing.md} /> Source</ToolTitle>
         <ToolActions>
-          {!reviewOpen && (
-            <QuietButton onClick={() => setReviewOpen(true)}><Icon name="message" size={spacing.md} /> Show review</QuietButton>
-          )}
-          <QuietButton onClick={() => fileInput.current?.click()}><Icon name="upload" size={spacing.md} /> Replace</QuietButton>
+          <TextButton onClick={() => fileInput.current?.click()}>Replace</TextButton>
+          <IconButton aria-label="Download .tex source" title="Download source" onClick={downloadSource}><Icon name="download" /></IconButton>
           <input
             ref={fileInput}
             accept=".tex,text/plain"
@@ -52,10 +48,6 @@ export function SourcePanel({ model }: {
           />
         </ToolActions>
       </ToolHeader>
-      <EditorMeta>
-        <FileName>resume.tex</FileName>
-        <SelectedAnchor>{selectedIssue?.anchor?.exactText ?? (selectedIssue ? "Select feedback to locate its source" : "No feedback linked")}</SelectedAnchor>
-      </EditorMeta>
       <EditorWrap>
         <CodeMirror
           ref={editor}
@@ -69,7 +61,6 @@ export function SourcePanel({ model }: {
           }}
           extensions={[
             StreamLanguage.define(stex),
-            EditorView.lineWrapping,
             keymap.of(searchKeymap),
           ]}
           height="100%"
@@ -84,7 +75,7 @@ export function SourcePanel({ model }: {
       </EditorWrap>
       {(diagnostics.length > 0 || compileError) && (
         <DiagnosticsPanel aria-live="polite">
-          {compileError && <DiagnosticRow $severity="error">{compileError}</DiagnosticRow>}
+          {compileError && <DiagnosticRow $severity="error">We could not compile this resume. Try compiling again.</DiagnosticRow>}
           {diagnostics.slice(0, 4).map((diagnostic, index) => (
             <DiagnosticRow key={`${diagnostic.line}-${diagnostic.message}-${index}`} $severity={diagnostic.severity}>
               {diagnostic.line ? `Line ${diagnostic.line}: ` : ""}{diagnostic.message}
@@ -93,7 +84,6 @@ export function SourcePanel({ model }: {
         </DiagnosticsPanel>
       )}
       <EditorStatus>
-        <Text>Ln 14, Col 3</Text>
         <Text>LaTeX</Text>
         <Text>UTF-8</Text>
       </EditorStatus>
@@ -101,33 +91,9 @@ export function SourcePanel({ model }: {
   );
 }
 
-const EditorMeta = styled.div`
-  display: flex;
-  min-height: ${spacing.xxl};
-  align-items: center;
-  justify-content: space-between;
-  gap: ${spacing.sm};
-  padding: 0 ${spacing.sm};
-  border-bottom: ${spacing.hairline} solid ${colors.paper[300]};
-  background: ${colors.paper[200]};
-`;
-
-const FileName = styled(Text).attrs({ as: "span" })`
-  font-family: ${fonts.mono};
-  font-size: ${fontSize.xxs};
-  font-weight: 500;
-`;
-
-const SelectedAnchor = styled(Text).attrs({ as: "span" })`
-  overflow: hidden;
-  color: ${colors.paper[600]};
-  font-size: ${fontSize.xxs};
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
 const EditorWrap = styled.div`
   min-height: 0;
+  min-width: 0;
   flex: 1;
   overflow: hidden;
   background: ${colors.paper[100]};

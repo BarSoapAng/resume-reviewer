@@ -1,4 +1,5 @@
 import { colors, fontSize, spacing, radius, breakpoints, fonts, alpha, shadows, Header2, Text, Strong, Emphasis, Small, ListItem } from "../../lib/style";
+import { IconButton } from "../base/IconButton";
 import { Loader } from "../base/Loader";
 import styled from "styled-components";
 import { PanelFrame } from "../layout/PanelFrame";
@@ -11,16 +12,16 @@ import { Icon } from "../base/Icon";
 
 export function PreviewPanel({ model }: {
   model: Pick<WorkspaceModel,
-    "activeTab" | "compile" | "compileError" | "compileState" | "isDemoResume" | "pdfUrl"
+    "activeTab" | "compile" | "compileState" | "isDemoResume" | "pdfUrl" | "downloadPdf"
   >;
 }) {
   const {
     activeTab,
     compile,
-    compileError,
     compileState,
     isDemoResume,
     pdfUrl,
+    downloadPdf,
   } = model;
   return (
     <PanelFrame $mobileActive={activeTab === "preview"} aria-labelledby="workspace-tab-preview" id="workspace-panel-preview" role="tabpanel">
@@ -28,19 +29,19 @@ export function PreviewPanel({ model }: {
         <ToolTitle>Preview</ToolTitle>
         <ToolActions>
           <CompileButton disabled={compileState === "compiling"} onClick={() => void compile()} title="Compile (Ctrl/Cmd + Enter)">
-            {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing.md} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
+            {compileState === "compiling" ? <Loader /> : <Icon name="play" size={spacing.lg} />} {compileState === "compiling" ? "Compiling…" : "Compile"}
           </CompileButton>
-          <DownloadIconLink aria-label="Download PDF" download="resume.pdf" href={pdfUrl} $disabled={!pdfUrl} onClick={(event) => { if (!pdfUrl) event.preventDefault(); }} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={spacing.md} /></DownloadIconLink>
+          <IconButton aria-label="Download PDF" disabled={!pdfUrl} onClick={() => void downloadPdf()} title={pdfUrl ? "Download PDF" : "Compile first"}><Icon name="download" size={spacing.md} /></IconButton>
         </ToolActions>
       </ToolHeader>
-      <PreviewCanvas>
+      <PreviewCanvas $unavailable={!pdfUrl && !isDemoResume}>
         {pdfUrl ? (
           <PdfFrame src={pdfUrl} title="Compiled resume PDF" />
         ) : !isDemoResume ? (
           <PreviewUnavailable>
             <PreviewUnavailableIcon><Icon name="code" size={spacing.lg} /></PreviewUnavailableIcon>
             <Strong>{compileState === "compiling" ? "Compiling resume" : "Preview unavailable"}</Strong>
-            <Text>{compileError ?? "Start the compiler service, then retry. Your LaTeX source is still saved locally."}</Text>
+            <Text>{compileState === "compiling" ? "Your preview will appear here when it is ready." : "Compile your resume to see a preview. If compilation fails, check the source diagnostics and try again."}</Text>
           </PreviewUnavailable>
         ) : (
           <Paper>
@@ -74,19 +75,6 @@ export function PreviewPanel({ model }: {
   );
 }
 
-const DownloadIconLink = styled.a<{ $disabled: boolean; }>`
-  display: grid;
-  width: ${spacing.xl};
-  height: ${spacing.xl};
-  place-items: center;
-  border-radius: ${radius.sm};
-  color: ${colors.paper[600]};
-  opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
-  pointer-events: ${({ $disabled }) => ($disabled ? "none" : "auto")};
-
-  &:hover { background: ${colors.paper[0]}; color: ${colors.paper[900]}; }
-`;
-
 const CompileButton = styled(QuietButton)`
   color: ${colors.forest[800]};
   background: ${colors.forest[100]};
@@ -94,7 +82,10 @@ const CompileButton = styled(QuietButton)`
   &:disabled { cursor: wait; opacity: 0.7; }
 `;
 
-const PreviewCanvas = styled.div`
+const PreviewCanvas = styled.div<{ $unavailable: boolean }>`
+  display: ${({ $unavailable }) => $unavailable ? "grid" : "block"};
+  place-items: center;
+  min-width: 0;
   min-height: 0;
   flex: 1;
   padding: ${spacing.lg};
@@ -121,7 +112,7 @@ const PreviewUnavailable = styled.div`
   display: flex;
   width: min(100%, ${spacing["10xl"]});
   min-height: ${spacing["8xl"]};
-  margin: ${spacing["4xl"]} auto;
+  margin: 0 auto;
   align-items: center;
   justify-content: center;
   flex-direction: column;

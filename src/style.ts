@@ -21,8 +21,10 @@ export const GlobalStyle = createGlobalStyle`
 html,
 body,
 #root {
-  min-width: ${spacing["9xl"]};
+  min-width: 0;
   min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   margin: 0;
 }
 
@@ -37,6 +39,8 @@ button {
   cursor: pointer;
 }
 
+a:focus-visible,
+select:focus-visible,
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {

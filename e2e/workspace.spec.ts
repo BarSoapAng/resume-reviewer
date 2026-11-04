@@ -13,19 +13,38 @@ test("imports, edits, checkpoints, and downloads a LaTeX resume", async ({ page 
   await page.getByLabel("LaTeX resume source").fill("\\documentclass{article}\\begin{document}Hello\\end{document}");
   await page.getByRole("button", { name: /review my resume/i }).click();
 
-  await expect(page.getByText("resume.tex")).toBeVisible();
+  await page.getByTitle("Rename document").click();
+  await page.getByRole("textbox", { name: "Document filename" }).fill("Angela Resume Updated.tex");
+  await page.getByRole("textbox", { name: "Document filename" }).press("Enter");
+  await expect(page.getByRole("button", { name: "Angela Resume Updated.tex" })).toBeVisible();
   await page.getByRole("button", { name: "Version history" }).click();
   await expect(page.getByText("Initial paste")).toBeVisible();
 
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download .tex source" }).click();
-  await expect((await download).suggestedFilename()).toBe("resume.tex");
+  await expect((await download).suggestedFilename()).toBe("Angela Resume Updated.tex");
 });
 
 test("switches the workspace panes on a narrow screen", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("aria:resume-source", "\\documentclass{article}\\begin{document}Hi\\end{document}"));
   await page.goto("/");
-  await page.getByRole("tab", { name: "preview" }).click();
-  await expect(page.getByRole("tabpanel", { name: "preview" })).toBeVisible();
+  await page.getByRole("button", { name: "Preview", exact: true }).click();
+  await expect(page.getByRole("tabpanel", { name: "Preview" })).toBeVisible();
 });
+
+
+test("can hide every panel and restore it from the permanent sidebar", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("aria:resume-source", "\\documentclass{article}\\begin{document}Hi\\end{document}"));
+  await page.goto("/");
+  for (const name of ["Ario", "Source", "Preview"]) {
+    await page.getByRole("button", { name, exact: true }).click();
+  }
+  await expect(page.getByRole("navigation", { name: "Workspace panels" })).toBeVisible();
+  await expect(page.getByRole("tabpanel")).toHaveCount(0);
+  await page.getByRole("button", { name: "Source", exact: true }).click();
+  await expect(page.getByRole("tabpanel", { name: "Source" })).toBeVisible();
+  await expect(page.locator("body")).toHaveJSProperty("scrollHeight", await page.evaluate(() => window.innerHeight));
+});
+

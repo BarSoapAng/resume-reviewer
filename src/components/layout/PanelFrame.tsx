@@ -5,6 +5,8 @@ export const PanelFrame = styled.section<{ $mobileActive: boolean; }>`
   display: flex;
   height: 100%;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   flex-direction: column;
   background: ${colors.paper[100]};
 
