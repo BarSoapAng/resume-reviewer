@@ -12,6 +12,12 @@ export async function getSession(): Promise<Session | null> {
   return (await supabase.auth.getSession()).data.session;
 }
 
+export function watchSession(onSession: (session: Session | null) => void) {
+  // Supabase emits INITIAL_SESSION after restoring storage or finishing OAuth.
+  const subscription = supabase?.auth.onAuthStateChange((_event, session) => onSession(session));
+  return () => subscription?.data.subscription.unsubscribe();
+}
+
 export async function signIn(provider: Extract<Provider, "github" | "google">) {
   if (!supabase) throw new Error("Supabase browser configuration is missing");
   const { error } = await supabase.auth.signInWithOAuth({
