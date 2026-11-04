@@ -1,9 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700&display=swap");
+import { createGlobalStyle } from "styled-components";
+import { colors, fonts, typography } from "./lib/style";
 
+export const GlobalStyle = createGlobalStyle`
 :root {
-  font-family: "DM Sans", sans-serif;
-  color: #23251f;
-  background: #f4f4ef;
+  ${typography.body}
+  font-family: ${fonts.body};
+  color: ${colors.ink};
+  background: ${colors.canvas};
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -35,6 +38,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #345b43;
+  outline: 2px solid ${colors.forest};
   outline-offset: 2px;
 }
+`;
