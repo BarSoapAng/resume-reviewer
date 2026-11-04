@@ -16,12 +16,13 @@ export function WorkspaceView({ model }: { model: WorkspaceModel }) {
   const [visible, setVisible] = useState({ review: true, source: true, preview: true });
   const group = useRef<ImperativePanelGroupHandle>(null);
   const panels = [
-    { id: "review", label: "Ario", icon: "message", content: <ReviewPanel model={model} /> },
-    { id: "source", label: "Source", icon: "code", content: <SourcePanel model={model} /> },
-    { id: "preview", label: "Preview", icon: "preview", content: <PreviewPanel model={model} /> },
+    { id: "review", label: "Ario", icon: "message" },
+    { id: "source", label: "Source", icon: "code" },
+    { id: "preview", label: "Preview", icon: "preview" },
   ] as const;
   const count = Object.values(visible).filter(Boolean).length;
   const selected = visible[model.activeTab] ? model.activeTab : panels.find((panel) => visible[panel.id])?.id;
+  const panelModel = { ...model, activeTab: selected ?? model.activeTab };
   useLayoutEffect(() => {
     const count = Object.values(visible).filter(Boolean).length;
     if (count) group.current?.setLayout([visible.review, visible.source, visible.preview].map((shown) => shown ? 100 / count : 0));
@@ -50,7 +51,7 @@ export function WorkspaceView({ model }: { model: WorkspaceModel }) {
             {panels.map((panel, index) => (
               <Fragment key={panel.id}>
                 <Panel id={panel.id} order={index} minSize={0} maxSize={count && !visible[panel.id] ? 0 : 100} collapsible defaultSize={index === 0 ? 28 : 36} className={`${visible[panel.id] ? "" : "panel-hidden"} ${selected === panel.id ? "" : "mobile-hidden"}`}>
-                  {panel.content}
+                  {panel.id === "review" ? <ReviewPanel model={panelModel} /> : panel.id === "source" ? <SourcePanel model={panelModel} /> : <PreviewPanel model={panelModel} />}
                 </Panel>
                 {index < panels.length - 1 && <ResizeHandle $visible={visible[panel.id] && panels.slice(index + 1).some((item) => visible[item.id])} />}
               </Fragment>
@@ -107,7 +108,6 @@ const Workspace = styled.section<{ $empty: boolean }>`
     [data-panel-group-direction] { display: block !important; }
     [data-panel] { width: 100% !important; height: 100% !important; }
     .mobile-hidden { display: none !important; }
-    section[role="tabpanel"] { display: flex; }
   }
 `;
 const ResizeHandle = styled(PanelResizeHandle)<{ $visible: boolean }>`
