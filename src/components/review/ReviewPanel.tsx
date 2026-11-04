@@ -77,7 +77,7 @@ function QuestionCard({ message, part, busy, submit }: { message: ConversationMe
   return <QuestionBox aria-label="Resume question">
     <QuestionTop><Speaker>Question {draft.index + 1} of {part.questions.length}</Speaker><Severity>{question.priority ?? "medium"}</Severity></QuestionTop>
     <QuestionText as="label" htmlFor={`answer-${part.groupId}`}>{question.text}</QuestionText>
-    <AnswerInput id={`answer-${part.groupId}`} placeholder="Share what you know, or leave this blank" value={answer?.answer ?? ""} onChange={(event) => save({ ...draft, answers: [...draft.answers.filter((value) => value.questionId !== question.id), { questionId: question.id, state: "unanswered", answer: event.target.value }] })} rows={2} />
+    <AnswerInput id={`answer-${part.groupId}`} placeholder="Share what you know, or leave this blank" value={answer?.answer ?? ""} onChange={(event) => save({ ...draft, answers: [...draft.answers.filter((value) => value.questionId !== question.id), { questionId: question.id, state: "answered", answer: event.target.value }] })} rows={2} />
     <Actions><TextButton disabled={draft.index === 0 || busy} onClick={() => save({ ...draft, index: draft.index - 1 })}>Previous</TextButton><TextButton disabled={busy} onClick={() => void respond("skipped").catch(() => undefined)}>Skip</TextButton><Action disabled={busy} onClick={() => void respond("answered").catch(() => undefined)}>{draft.index === part.questions.length - 1 ? "Submit answers" : "Answer / Next"}</Action></Actions>
   </QuestionBox>;
 }
