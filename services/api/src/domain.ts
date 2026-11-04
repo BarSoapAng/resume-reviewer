@@ -84,6 +84,8 @@ export interface CompileResult {
 }
 
 export interface ReviewTurnResponse {
+  reviewedVersionId?: string;
+  reviewedDiscipline?: Discipline;
   state: ReviewState;
   message: string;
   issues: Array<{

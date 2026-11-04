@@ -32,6 +32,7 @@ export function validateReviewTurn(turn: ReviewTurn, context: TurnValidationCont
   }
   for (const question of turn.questions) {
     for (const issueId of question.issueIds) if (!issueIds.has(issueId)) errors.push(`question:${question.id}:unknown_issue:${issueId}`);
+    for (const issueId of question.issueIds) if (context.existingIssues.some((issue) => issue.id === issueId && issue.status === "skipped")) errors.push(`question:${question.id}:skipped_issue:${issueId}`);
   }
   for (const edit of turn.edits) {
     const validation = validateAndApplyEdit(edit, context.currentVersionId, context.resumeSource, facts);

@@ -42,6 +42,8 @@ export function createAiReviewer(repository: Repository, dependencies: { runner?
         if (!normalize(evidence).includes(normalize(fact.statement))) throw new Error("Review fact is not supported by its source");
       }
       return {
+        reviewedVersionId: context.project.currentVersionId ?? undefined,
+        reviewedDiscipline: context.project.discipline,
         state: turn.recommendedTransition ?? turn.stage,
         message: turn.message,
         issues: turn.issues,

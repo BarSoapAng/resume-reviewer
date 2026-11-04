@@ -81,7 +81,11 @@ export class PostgresRepository implements Repository {
   async listVersions(projectId: string, userId: string): Promise<WorkspaceVersion[] | null> {
     const owned = await this.getProjectForUser(projectId, userId);
     if (!owned) return null;
-    const rows = await this.db.select().from(versions).where(eq(versions.projectId, projectId)).orderBy(sql`${versions.createdAt} desc`).limit(200);
+    // Match local retention: autosaves cannot displace explicit historical events.
+    const rows = (await Promise.all([
+      this.db.select().from(versions).where(and(eq(versions.projectId, projectId), sql`${versions.metadata}->>'kind' = 'autosave'`)).orderBy(sql`${versions.createdAt} desc`).limit(50),
+      this.db.select().from(versions).where(and(eq(versions.projectId, projectId), sql`coalesce(${versions.metadata}->>'kind', '') <> 'autosave'`)).orderBy(sql`${versions.createdAt} desc`).limit(100),
+    ])).flat().sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return rows.map((row) => ({ documentId: projectId, id: row.id, source: row.latexSource, filename: row.metadata.filename ?? owned.title, discipline: row.metadata.discipline ?? owned.discipline, createdAt: row.createdAt.toISOString(), reason: row.reason, kind: (row.metadata.kind ?? (row.createdBy === "ai" ? "edit" : "checkpoint")) as WorkspaceVersion["kind"], restoredFromId: row.metadata.restoredFromId }));
   }
 
@@ -115,7 +119,8 @@ export class PostgresRepository implements Repository {
     return this.db.transaction(async (tx) => {
       if (turnId) {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${turnId}))`);
-        const existing = await this.getReviewForUser(turnId, userId);
+        const [existingRow] = await tx.select({ value: reviewSessions }).from(reviewSessions).innerJoin(projects, eq(projects.id, reviewSessions.projectId)).where(and(eq(reviewSessions.id, turnId), eq(projects.userId, userId)));
+        const existing = existingRow ? review(existingRow.value) : undefined;
         if (existing) {
           if (existing.projectId !== projectId) throw new HttpError(409, "Turn belongs to another document");
           return existing;
@@ -131,7 +136,8 @@ export class PostgresRepository implements Repository {
     return await this.db.transaction(async (tx) => {
       if (turnId) {
         await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${turnId}))`);
-        const existing = await this.getReviewForUser(turnId, userId);
+        const [existingRow] = await tx.select({ value: reviewSessions }).from(reviewSessions).innerJoin(projects, eq(projects.id, reviewSessions.projectId)).where(and(eq(reviewSessions.id, turnId), eq(projects.userId, userId)));
+        const existing = existingRow ? review(existingRow.value) : undefined;
         if (existing) {
           if (existing.projectId !== projectId) throw new HttpError(409, "Turn belongs to another document");
           return existing;
@@ -183,6 +189,7 @@ export class PostgresRepository implements Repository {
     const session = await this.getReviewForUser(reviewId, userId);
     const context = await this.getReviewContext(reviewId, userId);
     if (!session || !context) return null;
+    if ((turn.reviewedVersionId && turn.reviewedVersionId !== context.project.currentVersionId) || (turn.reviewedDiscipline && turn.reviewedDiscipline !== context.project.discipline)) throw new HttpError(409, "The resume changed during this review response");
     if (turn.issues.some((issue) => !isAnchorCurrent(context.project.currentSource, context.project.currentVersionId ?? "", issue.sourceAnchor)) || turn.edits.some((edit) => edit.baseVersionId !== context.project.currentVersionId)) throw new HttpError(409, "The resume changed during this review response");
     if (!validTransition(session.state, turn.state)) throw new Error(`Invalid review transition: ${session.state} -> ${turn.state}`);
     return this.db.transaction(async (tx) => {
