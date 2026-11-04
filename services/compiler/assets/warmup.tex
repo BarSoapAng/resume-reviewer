@@ -1,17 +1,43 @@
 \documentclass[letterpaper,10pt]{article}
+\pdfpageheight=11in
+\pdfpagewidth=8.5in
 \usepackage[margin=0.5in]{geometry}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{bookmark}
+\usepackage{calc}
+\usepackage{changepage}
 \usepackage{enumitem}
+\usepackage[pscoord]{eso-pic}
 \usepackage{fancyhdr}
 \usepackage{fontawesome5}
 \usepackage{hyperref}
+\usepackage{iftex}
+\usepackage{ifthen}
+\usepackage{lastpage}
 \usepackage{multicol}
+\usepackage{needspace}
+\usepackage{paracol}
 \usepackage{setspace}
 \usepackage{tabularx}
 \usepackage{titlesec}
-\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+\ifPDFTeX
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+  \usepackage[utf8]{inputenc}
+  \usepackage{lmodern}
+\fi
 \begin{document}
 \section{Compiler package warmup}
+\begin{adjustwidth}{0.2cm}{0.2cm}
+  \setcolumnwidth{\fill,4cm}
+  \begin{paracol}{2}
+    Resume entry \textless{} 2s
+    \switchcolumn\raggedleft 2026
+  \end{paracol}
+\end{adjustwidth}
 \begin{itemize}[leftmargin=*]
-  \item \href{https://example.invalid}{Link} \faGithub
+  \item \href{https://example.invalid}{Link} \faGithub{} \faExternalLink*
 \end{itemize}
 \end{document}

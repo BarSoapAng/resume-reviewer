@@ -37,9 +37,11 @@ RUN case "$TARGETARCH" in \
     && rm -f /tmp/tectonic.tar.gz
 
 COPY assets/warmup.tex /tmp/warmup.tex
+# Tectonic creates format files with mode 0600; the runtime user must read them.
 RUN mkdir -p /opt/tectonic-cache /tmp/tectonic-config \
     && XDG_CACHE_HOME=/opt/tectonic-cache XDG_CONFIG_HOME=/tmp/tectonic-config \
       /usr/local/bin/tectonic --untrusted --outdir /tmp /tmp/warmup.tex \
+    && chmod -R a+rX /opt/tectonic-cache \
     && rm -rf /tmp/warmup.* /tmp/tectonic-config
 
 FROM node:22-bookworm-slim AS runtime
@@ -49,7 +51,7 @@ ENV NODE_ENV=production \
     TECTONIC_UNTRUSTED_MODE=1 \
     TECTONIC_BINARY=/usr/local/bin/tectonic \
     TECTONIC_VERSION=0.15.0 \
-    PACKAGE_BUNDLE_VERSION=tectonic-default-v1 \
+    PACKAGE_BUNDLE_VERSION=tectonic-default-v2 \
     COMPILER_CACHE_DIR=/cache \
     XDG_CACHE_HOME=/opt/tectonic-cache
 
@@ -62,8 +64,13 @@ COPY --from=tectonic /opt/tectonic-cache /opt/tectonic-cache
 COPY --from=build --chown=compiler:compiler /service/dist /service/dist
 COPY --from=build --chown=compiler:compiler /service/package.json /service/package.json
 COPY --from=build --chown=compiler:compiler /service/node_modules /service/node_modules
+COPY --chown=compiler:compiler assets/warmup.tex /tmp/warmup.tex
 
 USER compiler
+RUN mkdir /tmp/compiler-smoke \
+    && tectonic --untrusted --only-cached --outdir /tmp/compiler-smoke /tmp/warmup.tex \
+    && test -s /tmp/compiler-smoke/warmup.pdf \
+    && rm -rf /tmp/compiler-smoke /tmp/warmup.tex
 WORKDIR /service
 EXPOSE 8080
 CMD ["node", "dist/server.js"]

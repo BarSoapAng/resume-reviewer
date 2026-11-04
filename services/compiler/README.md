@@ -20,6 +20,8 @@ For local development, the Compose network allows the host API to reach the publ
 
 The package bundle should be pre-warmed and pinned before production deployment. Change `PACKAGE_BUNDLE_VERSION` whenever that bundle changes so cached PDFs cannot cross bundle versions.
 
+The image warms the packages used by RenderCV resumes, makes the cached formats readable by the runtime user, and checks offline compilation as that user during the image build. Changes to the warmup or cache permissions require rebuilding and recreating the compiler container; restarting the existing container keeps the old bundle.
+
 ## Configuration
 
 Environment variables: `PORT`, `HOST`, `MAX_SOURCE_BYTES`, `MAX_REQUEST_BYTES`, `MAX_PDF_BYTES`, `MAX_DIAGNOSTIC_BYTES`, `COMPILE_TIMEOUT_MS`, `COMPILER_CACHE_DIR`, `PACKAGE_BUNDLE_VERSION`, `TECTONIC_BINARY`, and `TECTONIC_VERSION`.
