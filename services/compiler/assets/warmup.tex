@@ -2,6 +2,7 @@
 \pdfpageheight=11in
 \pdfpagewidth=8.5in
 \usepackage[margin=0.5in]{geometry}
+\usepackage[dvipsnames]{xcolor}
 \usepackage{array}
 \usepackage{amsmath}
 \usepackage{bookmark}
@@ -21,7 +22,6 @@
 \usepackage{setspace}
 \usepackage{tabularx}
 \usepackage{titlesec}
-\usepackage[dvipsnames]{xcolor}
 \ifPDFTeX
   \input{glyphtounicode}
   \pdfgentounicode=1
@@ -29,15 +29,19 @@
   \usepackage{lmodern}
 \fi
 \begin{document}
+{\fontsize{26pt}{26pt}\selectfont\textbf{Resume header}}
 \section{Compiler package warmup}
+\textbf{Role title} \textit{Jul 2026 -- Present} \textbar{} Skills
+\renewcommand\labelitemi{$\circ$}
 \begin{adjustwidth}{0.2cm}{0.2cm}
   \setcolumnwidth{\fill,4cm}
   \begin{paracol}{2}
-    Resume entry \textless{} 2s
+    \textbf{Resume entry \textless{} 2s}
     \switchcolumn\raggedleft 2026
   \end{paracol}
 \end{adjustwidth}
 \begin{itemize}[leftmargin=*]
-  \item \href{https://example.invalid}{Link} \faGithub{} \faExternalLink*
+  \item \text{\href{https://example.invalid}{Link}\raisebox{.15ex}{\footnotesize\faExternalLink*}} \faGithub
+  \item \textbf{\href{https://example.invalid}{Project}\raisebox{.15ex}{\footnotesize\faExternalLink*}}
 \end{itemize}
 \end{document}
